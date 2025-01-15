@@ -1,0 +1,83 @@
+// it seems the normal ppu_upload_palette function is difficult to use with
+// PAAs, which is how we're loading in palettes
+fn ppu_upload_full_palette(CC/palette palette_ptr)
+    copy_data_to_ppu(palette_ptr, $3F00, 32)
+
+fn ppu_upload_bg_palette(CC/palette palette_ptr)
+    copy_data_to_ppu(palette_ptr, $3F00, 16)
+
+fn ppu_upload_spr_palette(CC/palette palette_ptr)
+    copy_data_to_ppu(palette_ptr, $3F10, 16)
+
+fn copy_data_to_ppu(CC/palette/nt data_ptr, UU start_addr, U length)
+: -inline
+    ppu_reset_addr(start_addr)
+
+    for U i = 0; i < length; i += 1
+    : +unroll
+        {PPUDATA}(data_ptr[i])
+
+fn enable_ppu()
+: +inline
+    ppu_mask |= PPUMASK_ON | PPUMASK_NO_CLIP
+    {PPUMASK}(ppu_mask)
+
+fn disable_ppu()
+: +inline
+    ppu_mask &= ~(PPUMASK_ON | PPUMASK_NO_CLIP)
+    {PPUMASK}(ppu_mask)
+
+fn enable_rendering()
+    enable_nmi()
+    nmi
+    enable_ppu()
+
+fn disable_rendering()
+    disable_ppu()
+    disable_nmi()
+
+fn safe_enable_rendering()
+    while {PPUSTATUS}() < $80
+    hide_oam(0)
+    enable_rendering()
+    ppu_set_scroll(0, 0)
+
+fn safe_disable_rendering()
+    nmi
+    disable_rendering()
+
+fn reset_nametable(U nt)
+    ppu_set_addr_coords(0, 0, nt)
+    ppu_upload_fill($FF, 960)
+    ppu_upload_fill($00, 64)
+
+// declared here to prevent compiler warnings. it is actually declared in
+// skin.macrofab
+data /nt
+
+fn load_nt(CCC/nt nt)
+    ppu_reset_addr($2000)
+    for UU i = 0; i < 1024; i += 1
+        {PPUDATA}(nt{i})
+
+ct fn LSR_4_TABLE() U[256]
+    U[256] table
+    for Int i = 0; i < 256; i += 1
+        table[i] = i >> 4
+    return table
+
+// assumes PPUADDR has already been set
+fn print_byte(U value)
+    {PPUDATA}(LSR_4_TABLE()[value])
+    {PPUDATA}(value & %1111)
+
+fn ppu_addr_from_coords(U x, U y, U nt) UU
+: +inline
+    return UU($2000) + UU($400 * nt) + UU($20 * y) + UU(x)
+
+ct fn ppu_addr_from_coords_ct(U x, U y, U nt) UU
+    return UU($2000) + UU($400 * nt) + UU($20 * y) + UU(x)
+
+fn ppu_set_addr_coords(U x, U y, U nt)
+: +inline
+    ppu_set_addr(ppu_addr_from_coords(x, y, nt))

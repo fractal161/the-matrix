@@ -1,0 +1,66 @@
+vars
+    U game_type = GAME_TYPE_A
+
+fn handle_type_menu_input()
+    if pads[0].pressed == BUTTON_RIGHT
+        game_type = GAME_TYPE_B
+        set_sfx(SFX_MENU_CHANGE)
+    else if pads[0].pressed == BUTTON_LEFT
+        game_type = GAME_TYPE_A
+        set_sfx(SFX_MENU_CHANGE)
+    else if pads[0].pressed == BUTTON_DOWN
+        if music_type < NUM_MUSIC_TRACKS
+            music_type += 1
+            set_music()
+        set_sfx(SFX_MENU_CHANGE)
+    else if pads[0].pressed == BUTTON_UP
+        if music_type > 0
+            music_type -= 1
+            set_music()
+        set_sfx(SFX_MENU_CHANGE)
+    else if pads[0].pressed == BUTTON_START
+        set_sfx(SFX_MENU_SELECT)
+        goto mode level_menu()
+        : preserves
+    else if pads[0].pressed == BUTTON_B
+        set_sfx(SFX_MENU_SELECT)
+        goto mode title()
+        : preserves
+
+fn stage_type_menu_arrow_sprites()
+    if (frame_counter.a & MENU_CURSOR_MASK()) != 0
+        // TODO: maybe consider a similar sprite loading strategy compared to what the actual game does?
+
+        // game type sprites
+        U sprite_x = $3F + U(96*game_type)
+        U sprite_y = $3F
+        oam_index = push_oam(oam_index, sprite_x, sprite_y, MENU_TILE_ARROW, %00000000)
+        sprite_x += $3A
+        oam_index = push_oam(oam_index, sprite_x, sprite_y, MENU_TILE_ARROW, ATTR_H_FLIP)
+
+        // music sprites
+        sprite_x = $67
+        sprite_y = $8F + (music_type << 4)
+        oam_index = push_oam(oam_index, sprite_x, sprite_y, MENU_TILE_ARROW, %00000000)
+        sprite_x += $4A
+        oam_index = push_oam(oam_index, sprite_x, sprite_y, MENU_TILE_ARROW, ATTR_H_FLIP)
+    hide_oam(oam_index)
+
+mode type_menu()
+: nmi main_nmi
+    render_mode = RENDER_MENU_SCREEN
+    safe_disable_rendering()
+
+    ppu_upload_full_palette(@palette_type_menu)
+    load_nt(@nt_type_menu)
+
+    mmc1_set_chr_0(CHR_TITLE_MENU)
+    // make both sprite/bg point to chr 0
+    ppu_ctrl &= ~(PPUCTRL_SPR_PT_1000 | PPUCTRL_BG_PT_1000)
+    safe_enable_rendering()
+    allegro = false
+    set_music()
+    while true
+        handle_type_menu_input()
+        stage_type_menu_arrow_sprites()
+        update_audio_and_nmi_wait()

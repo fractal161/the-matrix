@@ -1,0 +1,177 @@
+ct Fn.render[1] nmi_renderers = Fn.render[](
+    @(render.menu_screens)
+)
+
+fn render.menu_screens()
+    // set render to top-left nametable
+    ppu_ctrl &= %11111100 | PPUCTRL_NT_2000
+    {PPUCTRL}(ppu_ctrl)
+
+ct fn PIECE_STAT_ROW_TABLE() UU[8]
+    UU[8] table
+    for U i = 0; i < 8; i += 1
+        table[i] = ppu_addr_from_coords_ct(6, 12+(i << 1), 0)
+    return table
+
+fn update_line_clear_animation()
+    if frame_counter.a & %11 != 0
+        return
+    for U i = 0; i < 4; i += 1
+        if completed_rows[i] == 0
+            continue
+        // set address to middle of row
+        UU ppu_addr = VRAM_ROW_TABLE()[6+completed_rows[i]] + 4
+        // clear out left column
+        ppu_addr -= line_clear_anim_step
+        ppu_set_addr(ppu_addr)
+        {PPUDATA}($FF)
+        // clear out right column
+        ppu_addr += 1 + (line_clear_anim_step << 1)
+        ppu_set_addr(ppu_addr)
+        {PPUDATA}($FF)
+
+    line_clear_anim_step += 1
+    if line_clear_anim_step == 5
+        play_state = PLAY_STATE_UPDATE_STATS
+
+fn render.game()
+    if play_state == PLAY_STATE_WAIT_FOR_LINE_CLEAR_ANIM
+        update_line_clear_animation()
+        vram_row = 0
+    else
+        for U i = 0; i < 4; i += 1
+            copy_board_row_to_vram()
+    if game_render_flags & GAME_RENDER_LINES > 0
+        ppu_set_addr(ppu_addr_from_coords_ct(19, 3, 0))
+        {PPUDATA}(lines_bcd.b)
+        print_byte(lines_bcd.a)
+    if game_render_flags & GAME_RENDER_LEVEL > 0
+        ppu_set_addr(ppu_addr_from_coords_ct(26, 21, 0))
+        U level_display = legacy_level_display_table[level_number]
+        print_byte(level_display)
+        update_game_palette()
+    if game_render_flags & GAME_RENDER_SCORE > 0
+        ppu_set_addr(ppu_addr_from_coords_ct(24, 8, 0))
+        print_byte(score_bcd.c)
+        print_byte(score_bcd.b)
+        print_byte(score_bcd.a)
+    if game_render_flags & GAME_RENDER_PIECE_COUNT > 0
+        U piece_type = piece_id_to_type_table[active_piece_id]
+        ppu_set_addr(PIECE_STAT_ROW_TABLE()[piece_type])
+        UU count = piece_counts_bcd[piece_type]
+        {PPUDATA}(count.b)
+        print_byte(count.a)
+    // clear all flags at once
+    game_render_flags &= ~(GAME_RENDER_LINES | GAME_RENDER_LEVEL |
+        GAME_RENDER_SCORE | GAME_RENDER_PIECE_COUNT)
+    // tetris flash
+    ppu_set_addr($3F0E)
+    U flash_color = $00
+    if completed_lines == 4
+        if frame_counter & %11 == 0
+            flash_color = $30
+        if frame_counter & %111 == 0
+            set_sfx(SFX_TETRIS_END)
+    {PPUDATA}(flash_color)
+    // necessary to prevent a lag-frame type thing
+    ppu_set_scroll(0, 0)
+
+fn update_game_palette()
+    // reimplement glitched color behavior
+    U legacy_level_mod10 = level_number
+    while S(legacy_level_mod10) >= 10
+        legacy_level_mod10 -= 10
+    // change bg colors
+    ppu_set_addr($3F08)
+    for U i = 0; i < 4; i += 1
+        {PPUDATA}(legacy_level_color_table[(legacy_level_mod10 << 2) + i])
+    // change sprite colors
+    ppu_set_addr($3F18)
+    for U i = 0; i < 4; i += 1
+        {PPUDATA}(legacy_level_color_table[(legacy_level_mod10 << 2) + i])
+
+ct fn VRAM_ROW_TABLE() UU[$20]
+    UU[$20] table
+    for U i = 0; i < $20; i += 1
+        table[i] = ppu_addr_from_coords_ct(12, i, 0)
+    return table
+
+asm fn copy_row_raw(U row_offset)
+: employs
+    default
+    ldx &row_offset
+    ldy &board,x
+    sty PPUDATA
+    ldy &board+1,x
+    sty PPUDATA
+    ldy &board+2,x
+    sty PPUDATA
+    ldy &board+3,x
+    sty PPUDATA
+    ldy &board+4,x
+    sty PPUDATA
+    ldy &board+5,x
+    sty PPUDATA
+    ldy &board+6,x
+    sty PPUDATA
+    ldy &board+7,x
+    sty PPUDATA
+    ldy &board+8,x
+    sty PPUDATA
+    ldy &board+9,x
+    sty PPUDATA
+    rts
+
+fn copy_board_row_to_vram()
+    if S(vram_row) >= $15
+        return
+    ppu_set_addr(VRAM_ROW_TABLE()[6+vram_row])
+    U row_offset = U(10 * vram_row)
+    copy_row_raw(row_offset)
+    // this is nicer but slower
+    // for U i = 0; i < 10; i += 1
+    //     {PPUDATA}(@board[i + row_offset])
+    vram_row += 1
+    if S(vram_row) >= $14
+        vram_row = $20
+
+fn render.high_score_entry()
+    // there's a flag check but i think it's always set
+    ppu_set_addr(hs_letter_addr)
+    {PPUDATA}(@leaderboard_charmap[hs_letter])
+    ppu_set_scroll(0, 0)
+
+fn nmi_render()
+    switch render_mode
+        case RENDER_MENU_SCREEN
+            render.menu_screens()
+            break
+        case RENDER_GAME
+            render.game()
+            break
+        case RENDER_HIGH_SCORE_ENTRY
+            render.high_score_entry()
+            break
+        default:
+            break
+    // nmi_renderers[render_mode]()
+
+
+ct U[256] legacy_level_color_table = U[](
+    $0F,$30,$21,$12,$0F,$30,$29,$1A,$0F,$30,$24,$14,$0F,$30,$2A,$12,
+    $0F,$30,$2B,$15,$0F,$30,$22,$2B,$0F,$30,$00,$16,$0F,$30,$05,$13,
+    $0F,$30,$16,$12,$0F,$30,$27,$16,$60,$E6,$69,$A5,$69,$C9,$14,$30,
+    $04,$A9,$20,$85,$69,$E6,$89,$A5,$89,$C9,$14,$30,$04,$A9,$20,$85,
+    $89,$60,$A5,$49,$C9,$20,$30,$56,$A5,$BE,$C9,$01,$F0,$20,$A5,$A4,
+    $C9,$00,$D0,$0E,$E6,$A4,$A5,$B7,$85,$A5,$20,$EB,$98,$85,$A6,$4C,
+    $EA,$98,$A5,$A5,$C5,$B7,$D0,$36,$A5,$A4,$C9,$1C,$D0,$30,$A9,$00,
+    $85,$A4,$85,$45,$85,$41,$A9,$01,$85,$48,$A9,$05,$85,$40,$A6,$BF,
+    $BD,$56,$99,$85,$42,$20,$69,$99,$A5,$BE,$C9,$01,$F0,$07,$A5,$A6,
+    $85,$BF,$4C,$E6,$98,$20,$EB,$98,$85,$BF,$A9,$00,$85,$4E,$60,$A5,
+    $C0,$C9,$05,$D0,$12,$A6,$D3,$E6,$D3,$BD,$00,$DF,$4A,$4A,$4A,$4A,
+    $29,$07,$AA,$BD,$4E,$99,$60,$20,$07,$99,$60,$E6,$1A,$A5,$17,$18,
+    $65,$1A,$29,$07,$C9,$07,$F0,$08,$AA,$BD,$4E,$99,$C5,$19,$D0,$1C,
+    $A2,$17,$A0,$02,$20,$47,$AB,$A5,$17,$29,$07,$18,$65,$19,$C9,$07,
+    $90,$06,$38,$E9,$07,$4C,$2A,$99,$AA,$BD,$4E,$99,$85,$19,$60,$00,
+    $00,$00,$00,$01,$01,$01,$01,$02,$02,$03,$04,$04,$05,$05,$05,$05,
+)

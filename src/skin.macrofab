@@ -1,0 +1,80 @@
+#:skin:#
+
+// File for loading all skin-related data into their corresponding groups
+// implemented as a macro so the skin could be specified as a parameter
+
+omni data /nt
+    [1024] nt_legal
+        file(raw, #"skin"# "/legal/screen.nam")
+    [1024] nt_title
+        file(raw, #"skin"# "/title/screen.nam")
+    [1024] nt_type_menu
+        file(raw, #"skin"# "/type_menu/screen.nam")
+    [1024] nt_level_menu
+        file(raw, #"skin"# "/level_menu/screen.nam")
+    [1024] nt_game
+        file(raw, #"skin"# "/game/screen.nam")
+    [1024] nt_high_score_entry
+        file(raw, #"skin"# "/high_score_entry/screen.nam")
+
+// TODO: assign this to the /palette group when allowed
+// for ppu_upload_full_palette and the like
+omni data
+    [32] palette_legal
+        file(raw, #"skin"# "/legal/palette.pal")
+    [32] palette_title
+        file(raw, #"skin"# "/title/palette.pal")
+    [32] palette_type_menu
+        file(raw, #"skin"# "/type_menu/palette.pal")
+    [32] palette_a_level_menu
+        file(raw, #"skin"# "/level_menu/palette_a.pal")
+    [32] palette_b_level_menu
+        file(raw, #"skin"# "/level_menu/palette_b.pal")
+    [32] palette_game
+        file(raw, #"skin"# "/game/palette.pal")
+    [32] palette_high_score_entry
+        file(raw, #"skin"# "/high_score_entry/palette.pal")
+
+omni data
+    [6 * sizeof LeaderboardEntry] default_high_scores
+        file(raw, #"skin"# "/default_high_scores.bin")
+    [] leaderboard_charmap
+        file(raw, #"skin"# "/leaderboard_charmap.bin")
+
+// audio
+// puf1 didn't work out :(
+// audio(puf1_music)
+// audio(puf1_sfx, #"skin"# "/sfx.txt", #"skin"# "/sfx.nsf")
+
+omni data /sfx
+    // sq1
+    [] sfx_menu_change
+        file(raw, #"skin"# "/sfx/menu_change.bin")
+    [] sfx_menu_select
+        file(raw, #"skin"# "/sfx/menu_select.bin")
+    [] sfx_shift_piece
+        file(raw, #"skin"# "/sfx/shift_piece.bin")
+    [] sfx_tetris_clear
+        file(raw, #"skin"# "/sfx/tetris_clear.bin")
+    [] sfx_rotate_piece
+        file(raw, #"skin"# "/sfx/rotate_piece.bin")
+    [] sfx_level_up
+        file(raw, #"skin"# "/sfx/level_up.bin")
+    [] sfx_lock_piece
+        file(raw, #"skin"# "/sfx/lock_piece.bin")
+    [] sfx_tetris_end
+        file(raw, #"skin"# "/sfx/tetris_end.bin")
+    [] sfx_line_clear
+        file(raw, #"skin"# "/sfx/line_clear.bin")
+    [] sfx_pause
+        file(raw, #"skin"# "/sfx/pause.bin")
+
+    // noise
+    [] sfx_curtain
+        file(raw, #"skin"# "/sfx/curtain.bin")
+    [] sfx_rocket
+        file(raw, #"skin"# "/sfx/rocket.bin")
+
+// load tiles into chrom
+chrrom
+    file(raw, #"skin"# "/tiles.chr")

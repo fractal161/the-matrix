@@ -1,0 +1,185 @@
+// separate from other game state vars because it persists
+vars
+    Bool show_next_piece
+
+// we allocate the full page to properly simulate the top row bug
+vars /board
+: +align
+    [256] board
+        U[256](GAME_TILE_EMPTY)
+
+vars /game
+    Bool is_demo
+
+    U piece_x = 5
+    U piece_y = 0
+    U das_charge = 0
+    U gravity_timer = 0
+    // used for both initial delay and pushdown
+    U secondary_fall_timer = INITIAL_GAME_DELAY()
+
+    U active_piece_id
+    U next_piece_id
+
+    U vram_row = 0
+    U line_index = 0
+    U game_render_flags = 0
+    U completed_lines = 0
+    U[4] completed_rows
+    U line_clear_anim_step = 0 // rowY in disasm
+    S curtain_row
+
+    // demo temp vars
+
+fn update_timers_and_check_select()
+    gravity_timer += 1
+    if VERSION != VERSION_NWC && pads[0].pressed & BUTTON_SELECT > 0
+        show_next_piece = !show_next_piece
+
+fn update_leaderboard()
+    // TODO: optimize (either memory or time idk which)
+    MM lb_ptr_tmp = @leaderboard_a
+    if game_type == GAME_TYPE_B
+        lb_ptr_tmp = @leaderboard_b
+    MM[3] lb_ptrs
+    U rank = 0
+    for U i = 0; i < 3; i += 1
+        lb_ptrs[i] = lb_ptr_tmp
+        LeaderboardEntry entry = read LeaderboardEntry(lb_ptr_tmp)
+        if score_bcd < entry.score_bcd
+            rank += 1
+    if rank == 3
+        return
+    // shift all ranks down (this is lowkey cool)
+    for S i = 1; i >= rank; i -= 1
+        lb_ptr_tmp = lb_ptrs[U(i)]
+        LeaderboardEntry entry = read LeaderboardEntry(lb_ptr_tmp)
+        write LeaderboardEntry(lb_ptr_tmp, entry)
+    LeaderboardEntry new_entry = LeaderboardEntry(
+        U[LEADERBOARD_NAME_LENGTH]($00), // dashes
+        score_bcd,
+        level_number
+    )
+    write LeaderboardEntry(lb_ptrs[rank], new_entry)
+    goto mode high_score_entry(rank)
+    : preserves
+
+fn handle_game_over()
+    if play_state != PLAY_STATE_GAME_OVER
+        return
+    render_mode = RENDER_GAME
+    update_leaderboard()
+    update_audio_and_nmi_wait()
+    goto mode level_menu()
+    : preserves
+
+// returns true if we should follow the dlr bug
+fn check_for_reset_key() Bool
+    if VERSION == VERSION_NWC
+        return false
+
+    if pads[0].held == BUTTON_A | BUTTON_B | BUTTON_SELECT | BUTTON_START
+        mute_audio()
+        goto mode legal()
+        : preserves
+    return pads[0].held == BUTTON_DOWN | BUTTON_LEFT | BUTTON_RIGHT
+
+ct U[5] PAUSE_TILES = U[]($19, $0A, $1E, $1C, $0E)
+
+fn handle_start_button()
+    if VERSION == VERSION_NWC || pads[0].pressed != BUTTON_START
+        return
+    if is_demo
+        goto mode type_menu()
+        : preserves
+    // prevent pausing during curtain/congratulations
+    if render_mode != RENDER_GAME || play_state >= PLAY_STATE_CURTAIN
+        return
+    set_sfx(SFX_PAUSE)
+    render_mode = RENDER_MENU_SCREEN
+    update_audio_and_nmi_wait()
+    ppu_mask = PPUMASK_SPR_ON | PPUMASK_NO_CLIP
+    {PPUMASK}(ppu_mask)
+    hide_oam(0)
+    do while true
+        // stage pause sprite
+        for U i = 0; i < 5; i += 1
+            U x = $70 + (i << 3)
+            oam_index = push_oam(oam_index, x, $77, PAUSE_TILES[i], %00000000)
+        if pads[0].pressed == BUTTON_START
+            break
+        update_audio_and_nmi_wait()
+        hide_oam(0)
+    ppu_mask = PPUMASK_ON | PPUMASK_NO_CLIP
+    {PPUMASK}(ppu_mask)
+    // resume play
+    set_music()
+    vram_row = 0
+    render_mode = RENDER_GAME
+
+mode game(Bool is_demo_param)
+: nmi main_nmi
+    is_demo = is_demo_param
+    if is_demo
+        // TODO: all startDemo stuff
+        game_type == GAME_TYPE_A
+
+    // initGameBackground
+    safe_disable_rendering()
+    mmc1_set_chr_0(CHR_GAME)
+    // make both sprite/bg point to chr 0
+    ppu_ctrl &= ~(PPUCTRL_SPR_PT_1000 | PPUCTRL_BG_PT_1000)
+    ppu_upload_full_palette(@palette_game)
+    load_nt(@nt_game)
+    ppu_set_addr(ppu_addr_from_coords_ct(24, 5, 0))
+    MM lb = @leaderboard_a
+    if game_type == GAME_TYPE_B
+        lb = @leaderboard_b
+    LeaderboardEntry top_entry = read LeaderboardEntry(lb)
+    print_byte(top_entry.score_bcd.c)
+    print_byte(top_entry.score_bcd.b)
+    print_byte(top_entry.score_bcd.a)
+
+    if game_type == GAME_TYPE_B
+        // mark as b-type
+        ppu_set_addr(ppu_addr_from_coords_ct(3, 4, 0))
+        {PPUDATA}($0B)
+        // TODO: patch in height box
+
+    safe_enable_rendering()
+    if is_demo
+        level_number = 0
+    else
+        level_number = start_level
+
+
+    // initGameState
+    render_mode = RENDER_GAME
+
+    // init active and next piece
+    active_piece_id = get_next_piece_id()
+    increment_piece_count(active_piece_id)
+    advance_prng()
+    next_piece_id = get_next_piece_id()
+
+    if game_type == GAME_TYPE_B
+        lines_bcd = $25
+    game_render_flags = GAME_RENDER_PIECE_COUNT | GAME_RENDER_SCORE | GAME_RENDER_LEVEL | GAME_RENDER_LINES
+    update_audio_and_nmi_wait()
+    if game_type == GAME_TYPE_B
+        // TODO: init b-type playfield
+
+    allegro = false
+    set_music()
+
+    while true
+        update_timers_and_check_select()
+        handle_game_over()
+        update_player()
+        Bool dlr_bug = check_for_reset_key()
+        if dlr_bug
+            update_audio_and_nmi_wait()
+            hide_oam(0)
+        handle_start_button()
+        update_audio_and_nmi_wait()
+        hide_oam(0)

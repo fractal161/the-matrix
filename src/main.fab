@@ -1,0 +1,81 @@
+ct U[5] reference_signature = U[]($12, $34, $56, $78, $9A)
+
+vars
+: +zero_page
+    UU prng_value = $8988
+    // keeping track of register state
+    U ppu_ctrl = 0
+    U ppu_mask = 0
+    UU frame_counter = 0
+    U oam_index = 0
+    U render_mode = RENDER_MENU_SCREEN
+
+vars
+    // used to differentiate between a power-cycle and reset
+    U[5] runtime_signature
+
+
+fn init_leaderboard()
+    CC default_ptr = @default_high_scores
+    MM lb_ptr = @leaderboard_a
+    for U i = 0; i < 3; i += 1
+        LeaderboardEntry score = read LeaderboardEntry(default_ptr)
+        write LeaderboardEntry(lb_ptr, score)
+    lb_ptr = @leaderboard_b
+    for U i = 0; i < 3; i += 1
+        LeaderboardEntry score = read LeaderboardEntry(default_ptr)
+        write LeaderboardEntry(lb_ptr, score)
+
+fn disable_nmi()
+    ppu_ctrl &= ~PPUCTRL_NMI_ON
+    {PPUCTRL}(ppu_ctrl)
+
+fn enable_nmi()
+    ppu_ctrl |= PPUCTRL_NMI_ON
+    {PPUCTRL}(ppu_ctrl)
+
+fn advance_prng()
+    Bool new_bit = ((prng_value.a & %10) ^ (prng_value.b & %10)) >> 1
+    new_bit >=> prng_value
+    return
+
+nmi main_nmi()
+    oam_index = 0
+    nmi_render()
+    frame_counter += 1
+    if VERSION != VERSION_NWC
+        advance_prng()
+    // TODO: alternate behavior if in demo
+    // TODO: should we use poll_famicom_pads?
+    ppu_upload_oam_poll_pads(0)
+    update_pads()
+    fence
+    ppu_set_scroll(0, 0)
+    return
+
+// entry point. used to set up variables and then jump to legal
+mode main()
+: nmi main_nmi
+    state(MMC1_CHR_BANK | MMC1_MIRROR_1_LOWER)
+    for U i = 0; i < 5; i += 1
+        if runtime_signature[i] != reference_signature[i]
+            init_leaderboard()
+    runtime_signature = reference_signature
+    ppu_set_scroll(0, 0)
+    ppu_ctrl = PPUCTRL_NMI_ON
+    {PPUCTRL}(ppu_ctrl)
+    ppu_mask = PPUMASK_NO_CLIP
+    {PPUMASK}(ppu_mask)
+    // init sound engine
+    // puf.init(system)
+    // TODO: audio stuff, too tired to figure out
+
+    // then some sort of stack protection that doesn't seem to work idk, i'm
+    // skipping it
+
+    safe_disable_rendering()
+    for U i = 0; i < 4; i += 1
+        reset_nametable(i)
+    safe_enable_rendering()
+    goto mode legal()
+    : preserves

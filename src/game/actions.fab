@@ -1,0 +1,211 @@
+vars /game
+    U play_state = PLAY_STATE_GAME
+
+fn game_action.player_control() U
+    handle_lr()
+    handle_ab()
+    return handle_gravity()
+
+fn set_allegro()
+    ct U ALLEGRO_ROW = 5
+    Bool old_allegro = allegro
+    allegro = false
+    for U i = 0; i < 10; i += 1
+        if board_get_cell(@board, i, ALLEGRO_ROW) != GAME_TILE_EMPTY
+            allegro = true
+    if allegro != old_allegro
+        set_music()
+
+fn game_action.lock_piece() U
+    if !is_position_valid()
+        set_sfx(SFX_CURTAIN)
+        curtain_row = -$10
+        mute_audio()
+        return PLAY_STATE_CURTAIN
+    if S(vram_row) < $20
+        return PLAY_STATE_LOCK_PIECE
+    add_piece_to_board()
+    line_index = 0
+    set_board_vram_row()
+    set_allegro()
+    return PLAY_STATE_CHECK_FULL_LINES
+
+fn add_piece_to_board()
+    PieceTileset tileset = get_piece_tileset(active_piece_id)
+    for U i = 0; i < 4; i += 1
+        PieceTile tile = tileset.tiles[i]
+        U x = piece_x + tile.x_offset
+        U y = piece_y + tile.y_offset
+        board_set_cell(@board, x, y, tile.tile_type)
+
+
+// every piece fits inside a 4x4 box constructed around its center.
+// the line index iterates through every row intersecting that box to check
+// for line clears
+// TODO: check that top row bug is preserved
+fn game_action.check_full_lines() U
+    if S(vram_row) < $20
+        return PLAY_STATE_CHECK_FULL_LINES
+    U row = 0
+    if S(piece_y) >= 2
+        row = piece_y - 2
+    row += line_index
+
+    if is_row_full(row) == $01
+        set_sfx(SFX_LINE_CLEAR)
+        completed_lines += 1
+        completed_rows[line_index] = row
+        // copy rows
+        for U i = 0; i < row; i += 1
+            copy_row_from_above(row - 1 - i)
+        // clear top row
+        for U i = 0; i < 10; i += 1
+            board_set_cell(@board, i, 0, GAME_TILE_EMPTY)
+        active_piece_id = PIECE_ID_NONE
+    else
+        completed_rows[line_index] = 0
+    line_index += 1
+    if S(line_index) < $04
+        return PLAY_STATE_CHECK_FULL_LINES
+    vram_row = 0
+    line_clear_anim_step = 0
+    if completed_lines == 4
+        set_sfx(SFX_TETRIS_CLEAR)
+    if completed_lines > 0
+        return PLAY_STATE_WAIT_FOR_LINE_CLEAR_ANIM
+    set_sfx(SFX_LOCK_PIECE)
+    return PLAY_STATE_UPDATE_STATS
+
+fn is_row_full(U row) U
+    for U i = 0; i < 10; i += 1
+        if board_get_cell(@board, i, row) == GAME_TILE_EMPTY
+            return $00
+    return $01
+
+fn copy_row_from_above(U row)
+    for U j = 0; j < 10; j += 1
+        U cell = board_get_cell(@board, j, row)
+        board_set_cell(@board, j, row+1, cell)
+
+// does nothing, since play_state is increased during vblank
+fn game_action.wait_for_line_clear_anim() U
+    return PLAY_STATE_WAIT_FOR_LINE_CLEAR_ANIM
+
+fn game_action.update_stats() U
+    set_allegro()
+    handle_line_count()
+    handle_pushdown()
+    handle_line_clear_points()
+    return PLAY_STATE_CHECK_B_TYPE_DONE
+
+fn game_action.check_b_type_done() U
+    if game_type == GAME_TYPE_A
+        if VERSION == VERSION_PAL
+            // TODO: a-type pal debug
+    else
+        if VERSION == VERSION_PAL
+            // TODO: b-type pal debug
+        // TODO: everything else (copy graphics, play music, wait, then ending)
+    return PLAY_STATE_RECEIVE_GARBAGE
+
+fn game_action.receive_garbage() U
+    return PLAY_STATE_GET_NEXT_PIECE
+
+fn game_action.get_next_piece() U
+    if S(vram_row) < $20
+        return PLAY_STATE_GET_NEXT_PIECE
+    gravity_timer = 0
+    piece_y = 0
+    piece_x = 5
+    // TODO: there's a lookup table that i don't think is necessary??
+    active_piece_id = next_piece_id
+    increment_piece_count(active_piece_id)
+    next_piece_id = get_next_piece_id()
+    secondary_fall_timer = 0
+    return PLAY_STATE_GAME
+
+// allegedly waits for something but idk what, will rename later
+fn game_action.unknown_noop() U
+    return PLAY_STATE_UNKNOWN_NOOP
+
+fn game_action.curtain() U
+    if curtain_row == $14
+        if VERSION == VERSION_NWC
+            // loops until external interrupt is called
+            while true
+                update_audio_and_nmi_wait()
+        // for scores less than 30k, wait for start press
+        if DEBUG || score_bcd.c < 3
+            if pads[0].pressed == BUTTON_START
+                return PLAY_STATE_GAME_OVER
+            return PLAY_STATE_CURTAIN
+        // otherwise, go to victory screen
+        wait(ENDING_SLEEP_TIME_1())
+        goto mode victory()
+        : preserves
+    // only update curtain when frame counter is a multiple of 4
+    if frame_counter.a & %11 != 0
+        return PLAY_STATE_CURTAIN
+    // negative row is like a timer
+    if curtain_row < 0
+        curtain_row += 1
+        return PLAY_STATE_CURTAIN
+    // hide current piece sprite
+    active_piece_id = PIECE_ID_NONE
+    // draw curtain_row
+    for U i = 0; i < 10; i += 1
+        board_set_cell(@board, i, U(curtain_row), CURTAIN_TILE)
+    vram_row = U(curtain_row)
+    curtain_row += 1
+    return PLAY_STATE_CURTAIN
+
+// each game action returns the resulting state
+ct Fn.game_action[10] game_actions = Fn.game_action[](
+    @(game_action.player_control), // PLAY_STATE_GAME
+    @(game_action.lock_piece), // PLAY_STATE_LOCK_PIECE
+    @(game_action.check_full_lines), // PLAY_STATE_CHECK_FULL_LINES
+    @(game_action.wait_for_line_clear_anim),
+    @(game_action.update_stats),
+    @(game_action.check_b_type_done),
+    @(game_action.receive_garbage),
+    @(game_action.get_next_piece),
+    @(game_action.unknown_noop),
+    @(game_action.curtain),
+)
+
+fn update_player()
+    play_state = game_actions[play_state]()
+    stage_active_piece_sprites()
+    stage_next_piece_sprites()
+
+// top left coordinate is 96, 47 ($60, $2F) (12, 6 in tiles)
+fn stage_active_piece_sprites()
+    PieceTileset tileset = get_piece_tileset(active_piece_id)
+    for U i = 0; i < 4; i += 1
+        PieceTile tile = tileset.tiles[i]
+        U x = piece_x + tile.x_offset
+        U y = piece_y + tile.y_offset
+        if y >= $80
+            continue
+        U sprite_x = 96 + (x << 3)
+        U sprite_y = 47 + (y << 3)
+        oam_index = push_oam(oam_index, sprite_x, sprite_y, tile.tile_type, %00000010)
+
+ct U[7] NEXT_PIECE_X = U[](
+    204, 204, 204, 208, 204, 204, 208
+)
+
+ct U[7] NEXT_PIECE_Y = U[](
+    119, 119, 119, 119, 119, 119, 123
+)
+
+fn stage_next_piece_sprites()
+    if !show_next_piece
+        return
+    PieceTileset tileset = get_piece_tileset(next_piece_id)
+    U type = piece_id_to_type_table[next_piece_id]
+    for U i = 0; i < 4; i += 1
+        PieceTile tile = tileset.tiles[i]
+        U x = NEXT_PIECE_X[type] + (tile.x_offset << 3)
+        U y = NEXT_PIECE_Y[type] + (tile.y_offset << 3)
+        oam_index = push_oam(oam_index, x, y, tile.tile_type, %00000010)

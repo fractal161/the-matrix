@@ -1,0 +1,16 @@
+// Configuration file for game-specific options.
+
+ct Bool DEBUG = true
+
+// enum for what type of rom to produce
+ct U VERSION_NTSC = 0
+ct U VERSION_PAL = 1
+ct U VERSION_NWC = 2
+
+ct U VERSION = VERSION_NTSC
+
+// SKINNING
+
+// Do not change the format of line!
+// the second argument is the desired skin
+macro("skin", "default")

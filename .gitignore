@@ -1,0 +1,10 @@
+main.asm
+tetris.nes
+.tags
+
+*.nss
+
+build/
+release/
+
+skins/classic
