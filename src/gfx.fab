@@ -53,9 +53,7 @@ fn reset_nametable(U nt)
 
 // declared here to prevent compiler warnings. it is actually declared in
 // skin.macrofab
-data /nt
-
-fn load_nt(CCC/nt nt)
+fn load_nt(CC/nt nt)
     ppu_reset_addr($2000)
     for UU i = 0; i < 1024; i += 1
         {PPUDATA}(nt{i})

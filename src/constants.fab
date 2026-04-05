@@ -46,6 +46,11 @@ ct U GAME_TILE_3 = $7D
 ct U GAME_TILE_EMPTY = $EF
 ct U GAME_TILE_HIDDEN = $FF
 
+ct U NESFAB_MODE_GAME = 0
+ct U NESFAB_MODE_HIGH_SCORE = 1
+ct U NESFAB_MODE_LEVEL_MENU = 2
+ct U NESFAB_MODE_LEGAL = 3
+
 // platform specific parameters
 ct fn LEGAL_SLEEP_TIME() U
     if DEBUG

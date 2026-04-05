@@ -130,19 +130,10 @@ fn game_action.unknown_noop() U
 
 fn game_action.curtain() U
     if curtain_row == $14
-        if VERSION == VERSION_NWC
-            // loops until external interrupt is called
-            while true
-                update_audio_and_nmi_wait()
-        // for scores less than 30k, wait for start press
-        if DEBUG || score_bcd.c < 3
-            if pads[0].pressed == BUTTON_START
-                return PLAY_STATE_GAME_OVER
-            return PLAY_STATE_CURTAIN
-        // otherwise, go to victory screen
-        wait(ENDING_SLEEP_TIME_1())
-        goto mode victory()
-        : preserves
+        // wait for game over
+        if pads[0].pressed == BUTTON_START
+            return PLAY_STATE_GAME_OVER
+        return PLAY_STATE_CURTAIN
     // only update curtain when frame counter is a multiple of 4
     if frame_counter.a & %11 != 0
         return PLAY_STATE_CURTAIN

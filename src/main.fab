@@ -40,6 +40,9 @@ fn advance_prng()
     return
 
 nmi main_nmi()
+    main_nmi_fn()
+
+fn main_nmi_fn()
     oam_index = 0
     nmi_render()
     frame_counter += 1
@@ -51,7 +54,6 @@ nmi main_nmi()
     update_pads()
     fence
     ppu_set_scroll(0, 0)
-    return
 
 // entry point. used to set up variables and then jump to legal
 mode main()

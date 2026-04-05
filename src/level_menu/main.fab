@@ -72,7 +72,7 @@ fn handle_level_menu_input()
         if pads[0].held == BUTTON_START | BUTTON_A
             start_level += 10
         set_sfx(SFX_MENU_SELECT)
-        goto mode game(false)
+        goto mode game()
         : preserves
     if pads[0].pressed == BUTTON_B
         set_sfx(SFX_MENU_SELECT)
