@@ -1,1 +1,22 @@
+ct Int NUM_SUBFRAMES = 8
+ct U[NUM_SUBFRAMES] SCANLINES = U[](246, 17, 50, 82, 115, 148, 180, 213)
+
+vars /game
+    U subframe_index = 0
+
 irq subframe_poll()
+    // acknowledge
+    {MMC5_SCANLINE_STATUS}()
+    fence
+    // schedule next irq
+    subframe_index += 1
+    if subframe_index == NUM_SUBFRAMES
+        subframe_index = 0
+    else
+        {MMC5_SCANLINE_COMPARE}(SCANLINES[subframe_index])
+
+
+
+fn set_breakpoint(UU addr)
+    {addr}($FF)
+

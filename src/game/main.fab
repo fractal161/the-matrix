@@ -129,7 +129,7 @@ nmi game_nmi()
 
 mode game()
 : nmi game_nmi
-// : irq subframe_poll
+: irq subframe_poll
 
     // initGameBackground
     safe_disable_rendering()
@@ -179,6 +179,9 @@ mode game()
     next_nesfab_mode = NESFAB_MODE_GAME
     allegro = false
     set_music()
+    // enable irq
+    irq true
+    {MMC5_SCANLINE_STATUS}($80)
     // spinlock
     while true
         nmi
