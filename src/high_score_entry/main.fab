@@ -52,7 +52,8 @@ mode high_score_entry(U rank)
     // TODO: set_music
     render_mode = RENDER_HIGH_SCORE_ENTRY
     safe_disable_rendering()
-    mmc1_set_chr_0(CHR_TITLE_MENU)
+    // mmc1_set_chr_0(CHR_TITLE_MENU)
+    mmc5_chr_select_4k(0, CHR_TITLE_MENU)
     // palette updates need to be close to blanking
     ppu_upload_full_palette(@palette_high_score_entry)
     load_nt(@nt_high_score_entry)

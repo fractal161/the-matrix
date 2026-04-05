@@ -1,48 +1,12 @@
-# Nestris
+# The Matrix
 
-A recreation of [Tetris (NES)](https://en.wikipedia.org/wiki/Tetris_(NES_video_game)) using modern NES development tools.
+> Matrix (may-trix): n. the rectangular arrangement of cells creating the active game area, usually 10 columns wide by 20 rows high. Tetriminos fall from the top-middle just above the Skyline (off-screen) to the bottom.
+> *\- Blue Planet Software, 2009*
 
-Traditionally, NES games were written in raw 6502 assembly, and it still remains the most dominant strategy for modern homebrew games. This approach offers the finest degree of control over the hardware, but is much less ergonomic than higher-level languages. However, in the many years since the last official NES was made, newer tools have been made to address these shortcomings. In essence, this project imagines how the codebase of NES Tetris would look like if these modern tools were used. This codebase build a `.nes` file, which can be run via software through an emulator or on hardware with a flash cart.
+> No one can be told what the Matrix is. You have to see it for yourself.
+> *\- Morpheus, 1999*
 
-I have the following goals:
-- Have an easily modifiable codebase for faster romhack creation.
-- Benchmark NESFab's performance against the original assembly.
-- Gain experience with tools I haven't used before.
-
-Replicating the gameplay and visual/audio elements of an existing game has inherent copyright risks. This project is primarily intended as a personal exploration and learning exercise.
-
-## Skins
-
-To avoid distribution of visual/audio assets, we instead provide an alternate *skin*, which contain equivalents for each one. Skins can be added and customized, with limited flexibility.
-
-By providing an original NES Tetris rom in the project's root folder, you can generate a "classic" skin by running `python scripts/make_classic.py`. You can then use it by changing the line at the bottom of `config.fab` to read
-```
-macro("skin", "classic")
-```
-and then running make.
-
-## Implementation strategy
-
-I use the NES Tetris [disassembly](https://github.com/CelestialAmber/TetrisNESDisasm) as the blueprint for all expected behavior. In addition, I also cross-reference the logic with [meta_nestris](https://github.com/negative-seven/meta_nestris), which specifies the core game logic.
-
-Planned features:
-- All logic from the original ROM in one way or another
-- Dual NTSC/PAL support
-- Skin import from the original NES Tetris ROM
-
-Non-features:
-- Any cycle-based timing glitches, like the game crash (however, it may be possible to implement a simulation similar to the [crash detection](https://github.com/kirjavascript/TetrisGYM/pull/61) used in TetrisGYM)
-- Other timing issues like screen transition durations, so TAS-level consistency is not enforced.
-- Inaccessible code (e.g. the unfinished 2-player feature)
-
-## Roadmap
-
-- Add b-type
-- Add music
-- Add demo
-- Sound effects for default skin
-- Add victory screens?
-- Test for frame-perfect accuracy
+A NES Tetris romhack that lets you see *everything*.
 
 ## Tools
 
@@ -70,7 +34,7 @@ This project rewrites the music and sound effects using Famitracker, which are t
 
 This project uses [submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules), so you'll want to clone this repository using `git clone --recurse-submodules`, or use `git submodule update --init --recursive` if you've already cloned it. From there, enter the `nesfab` directory and follow its [build instructions](https://github.com/pubby/nesfab?tab=readme-ov-file#building). To work with graphics or audio, you'll want to install [NEXXT](https://frankengraphics.itch.io/nexxt) or [Famitracker](http://famitracker.com/) respectively, though this isn't required to build the project.
 
-From here, `nestris` can be built by running `make`.
+From here, `the-matrix` can be built by running `make`.
 
 ## Benchmarks
 

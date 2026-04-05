@@ -1,7 +1,7 @@
 BUILD_DIR := build
 RELEASE_DIR := release
 SKIN_DIR := skins
-ROM := nestris
+ROM := the-matrix
 BUILD_PATH := $(BUILD_DIR)/$(ROM).nes
 SRC_FILES := $(shell find src -name "*.fab" -or -name '*.macrofab')
 
@@ -11,7 +11,6 @@ SKIN_FILES := $(shell find ${SKIN_PATH} -type f)
 
 $(BUILD_PATH): $(ROM).cfg config.fab $(SRC_FILES) $(SKIN_FILES) | buildDir
 	./nesfab/nesfab $(ROM).cfg
-	python scripts/patch_mmc1.py
 
 .PHONY: clean run release buildDir releaseDir
 

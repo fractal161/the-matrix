@@ -126,7 +126,8 @@ mode game(Bool is_demo_param)
 
     // initGameBackground
     safe_disable_rendering()
-    mmc1_set_chr_0(CHR_GAME)
+    // mmc1_set_chr_0(CHR_GAME)
+    mmc5_chr_select_4k(0, CHR_GAME)
     // make both sprite/bg point to chr 0
     ppu_ctrl &= ~(PPUCTRL_SPR_PT_1000 | PPUCTRL_BG_PT_1000)
     ppu_upload_full_palette(@palette_game)

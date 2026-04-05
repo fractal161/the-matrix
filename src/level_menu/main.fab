@@ -111,7 +111,8 @@ mode level_menu()
     render_mode = RENDER_MENU_SCREEN
     safe_disable_rendering()
     fence
-    mmc1_set_chr_0(CHR_TITLE_MENU)
+    // mmc1_set_chr_0(CHR_TITLE_MENU)
+    mmc5_chr_select_4k(0, CHR_TITLE_MENU)
     // make both sprite/bg point to chr 0
     ppu_ctrl &= ~(PPUCTRL_SPR_PT_1000 | PPUCTRL_BG_PT_1000)
     // palette updates need to be close to blanking

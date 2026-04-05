@@ -4,12 +4,11 @@ mode legal()
 : nmi main_nmi
     mute_audio()
     render_mode = RENDER_MENU_SCREEN
-    if VERSION == VERSION_NWC
-        goto mode title()
-        : preserves
-    // TODO: update audio here?
+    // set chr to 4kb + 4kb, which is what mmc1 uses
+    {MMC5_CHR_MODE}(MMC5_CHR_MODE_4K)
     safe_disable_rendering()
-    mmc1_set_chr_0(CHR_TITLE_MENU)
+    // mmc1_set_chr_0(CHR_TITLE_MENU)
+    mmc5_chr_select_4k(0, CHR_TITLE_MENU)
     // make both sprite/bg point to chr 0
     ppu_ctrl &= ~(PPUCTRL_SPR_PT_1000 | PPUCTRL_BG_PT_1000)
     {PPUCTRL}(ppu_ctrl)

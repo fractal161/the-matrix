@@ -54,7 +54,8 @@ mode type_menu()
     ppu_upload_full_palette(@palette_type_menu)
     load_nt(@nt_type_menu)
 
-    mmc1_set_chr_0(CHR_TITLE_MENU)
+    // mmc1_set_chr_0(CHR_TITLE_MENU)
+    mmc5_chr_select_4k(0, CHR_TITLE_MENU)
     // make both sprite/bg point to chr 0
     ppu_ctrl &= ~(PPUCTRL_SPR_PT_1000 | PPUCTRL_BG_PT_1000)
     safe_enable_rendering()

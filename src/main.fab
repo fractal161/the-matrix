@@ -56,7 +56,6 @@ nmi main_nmi()
 // entry point. used to set up variables and then jump to legal
 mode main()
 : nmi main_nmi
-    state(MMC1_CHR_BANK | MMC1_MIRROR_1_LOWER)
     for U i = 0; i < 5; i += 1
         if runtime_signature[i] != reference_signature[i]
             init_leaderboard()
