@@ -33,6 +33,7 @@ vars /game
     // perform it from the main
     U lb_rank_achieved = 0
     U next_nesfab_mode = NESFAB_MODE_GAME
+    Bool paused = false
 
     // demo temp vars
 
@@ -86,28 +87,19 @@ fn check_for_reset_key() Bool
 
 ct U[5] PAUSE_TILES = U[]($19, $0A, $1E, $1C, $0E)
 
-fn handle_start_button()
-    // prevent pausing during curtain/congratulations
-    if render_mode != RENDER_GAME || play_state >= PLAY_STATE_CURTAIN
-        return
-    set_sfx(SFX_PAUSE)
-    render_mode = RENDER_MENU_SCREEN
-    update_audio_and_nmi_wait()
-    do while true
-        // stage pause sprite after current/next
-        oam_index = 64
-        for U i = 0; i < 5; i += 1
-            U x = $70 + (i << 3)
-            oam_index = push_oam(oam_index, x, $77, PAUSE_TILES[i], %00000000)
-        if pads[0].pressed == BUTTON_START
-            break
-        update_audio_and_nmi_wait()
-        while true
-    // resume play
-    hide_oam(8)
-    set_music()
-    vram_row = 0
-    render_mode = RENDER_GAME
+fn handle_pause()
+    // stage pause sprite after current/next
+    oam_index = 64
+    for U i = 0; i < 5; i += 1
+        U x = $70 + (i << 3)
+        oam_index = push_oam(oam_index, x, $77, PAUSE_TILES[i], %00000000)
+    if pads[0].pressed == BUTTON_START
+        paused = false
+        hide_oam(8)
+        set_music()
+        vram_row = 0
+        render_mode = RENDER_GAME
+    update_audio()
 
 fn game_logic()
     hide_oam(0) // TODO: can probably just reset a few sprites to save cycles
@@ -121,14 +113,19 @@ fn game_logic()
     next_nesfab_mode = check_for_reset_key()
     if next_nesfab_mode != NESFAB_MODE_GAME
         return
-    // if pads[0].pressed == BUTTON_START
-    //     handle_start_button()
+    if pads[0].pressed == BUTTON_START && render_mode == RENDER_GAME && play_state < PLAY_STATE_CURTAIN
+        paused = true
+        set_sfx(SFX_PAUSE)
+        render_mode = RENDER_MENU_SCREEN
     update_audio()
 
 nmi game_nmi()
     main_nmi_fn()
     fence
-    game_logic()
+    if paused
+        handle_pause()
+    else
+        game_logic()
 
 mode game()
 : nmi game_nmi
