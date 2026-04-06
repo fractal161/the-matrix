@@ -51,17 +51,10 @@ fn main_nmi_fn()
     ppu_upload_oam(0)
     fence
     update_pads()
-    // enables subframe polling
-    if render_mode == RENDER_GAME
     frame_counter += 1
     advance_prng()
     fence
     ppu_set_scroll(0, 0)
-
-asm fn cli()
-: employs
-    cli
-    rts
 
 // entry point. used to set up variables and then jump to legal
 mode main()

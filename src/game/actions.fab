@@ -28,6 +28,7 @@ fn game_action.lock_piece() U
     line_index = 0
     set_board_vram_row()
     set_allegro()
+    handle_subframe_cleanup()
     return PLAY_STATE_CHECK_FULL_LINES
 
 fn add_piece_to_board()

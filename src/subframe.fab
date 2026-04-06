@@ -1,28 +1,92 @@
 ct Int NUM_SUBFRAMES = 8
-// first entry experimentally tested
-ct U[NUM_SUBFRAMES] SCANLINES = U[](241, 12, 45, 77, 110, 143, 175, 208)
+// board height + 3, which is how many frames before we're tracking track
+ct Int INPUT_BUFFER_LENGTH = 23
+// last entry is nmi poll, experimentally tested
+ct U[NUM_SUBFRAMES] SCANLINES = U[](12, 45, 77, 110, 143, 175, 208, 241)
 
 vars /game
-    U subframe_index = 0
-    // 
+    // normal pad only updates once a frame to preserve game logic
     Pad subframe_pad
+
+    // lsb is start of frame, to make it easy to look up nmi bits
+    // since we're not cleaning these up (expensive), we have to use
+    // input_buffer_index for all calculations
+    U[INPUT_BUFFER_LENGTH] lr_input_buffer
+    U[INPUT_BUFFER_LENGTH] ab_input_buffer
+    // TODO: we clean ALLLL of this up during either lock_piece or
+    // check_for_completed_rows
+    U input_buffer_index = 0 // how many frames we've been tracking
+    U subframe_index = 0 // 0-7
+    U subframe_render_flags = 0
+
+    // STATISTICS (may become its own file probably not)
+
+    // real values are 0 - 8*23=184
+    U stat_input_delay = $FF
+
+fn handle_subframe_nmi()
+    // hack to clear interrupt so the subframe polls can run
+    cli()
+    {MMC5_SCANLINE_STATUS}($80)
+    subframe_index = 1
+    {MMC5_SCANLINE_COMPARE}(SCANLINES[0])
+    // pads already polled, we only have to update
+    subframe_pad = update_pad(subframe_pad, raw_pads[0])
+    handle_subframe_poll()
 
 irq subframe_poll()
     // acknowledge
     {MMC5_SCANLINE_STATUS}()
     fence
     // schedule next irq
+    {MMC5_SCANLINE_COMPARE}(SCANLINES[subframe_index])
+    poll_pads() // stored into raw_pads
+    subframe_pad = update_pad(subframe_pad, raw_pads[0])
+    // once input_buffer_index == INPUT_BUFFER_LENGTH, we don't need to
+    // record anything
+    if input_buffer_index < INPUT_BUFFER_LENGTH
+        handle_subframe_poll()
     subframe_index += 1
     if subframe_index == NUM_SUBFRAMES
         subframe_index = 0
-    else
-        {MMC5_SCANLINE_COMPARE}(SCANLINES[subframe_index])
-    poll_pads() // stored into raw_pads
 
-fn handle_subframe_nmi()
-    // TODO: copy pads here
-    subframe_pad = update_pad(subframe_pad, raw_pads[0])
+fn handle_subframe_poll()
+    // "assign by rotate right" aka the coolest operation ever
+    Bool is_button_pressed = subframe_pad.held & (BUTTON_A | BUTTON_B)
+    is_button_pressed >=> ab_input_buffer[subframe_index]
+    // then left/right
+    is_button_pressed = subframe_pad.held & (BUTTON_LEFT | BUTTON_RIGHT)
+    is_button_pressed >=> lr_input_buffer[subframe_index]
+    subframe_render_flags |= SUBFRAME_RENDER_INPUT
+    // update input delay
+    if is_button_pressed && stat_input_delay == $FF
+        stat_input_delay = (input_buffer_index << 3) + subframe_index
+    // if buffer is complete, we perform end-of-frame tasks
+    // this is where stats and stuff get updated, this is where we queue
+    // renders, etc
+    if subframe_index == NUM_SUBFRAMES - 1
+
+// used in another state to reset vars
+fn handle_subframe_cleanup()
+    for U i = 0; i < INPUT_BUFFER_LENGTH; i += 1
+        ab_input_buffer[i] = 0
+        lr_input_buffer[i] = 0
+    input_buffer_index = 0
+    stat_input_delay = $FF
+
+asm fn cli()
+: employs
+    cli
+    rts
 
 fn set_breakpoint(UU addr)
     {addr}($FF)
 
+fn write_uu(UU addr, UU x)
+    ppu_reset_addr(addr)
+    fence
+    {PPUDATA}(x.b >> 4)
+    {PPUDATA}(x.b & %1111)
+    {PPUDATA}(x.a >> 4)
+    {PPUDATA}(x.a & %1111)
+    fence

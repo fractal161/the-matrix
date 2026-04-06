@@ -34,6 +34,7 @@ fn update_line_clear_animation()
     if line_clear_anim_step == 5
         play_state = PLAY_STATE_UPDATE_STATS
 
+// TODO: optimize this to oblivion
 fn render.game()
     if play_state == PLAY_STATE_WAIT_FOR_LINE_CLEAR_ANIM
         update_line_clear_animation()
@@ -41,6 +42,35 @@ fn render.game()
     else
         for U i = 0; i < 4; i += 1
             copy_board_row_to_vram()
+    // make sure only one of game_render/subframe_render happen for redundancy
+    if game_render_flags > 0
+        handle_game_render()
+    else if subframe_render_flags > 0
+        handle_subframe_render()
+    // tetris flash
+    ppu_set_addr($3F0E)
+    U flash_color = $00
+    if completed_lines == 4
+        if frame_counter & %11 == 0
+            flash_color = $30
+        if frame_counter & %111 == 0
+            set_sfx(SFX_TETRIS_END)
+    {PPUDATA}(flash_color)
+    // handle subframe polling
+    if play_state == PLAY_STATE_GAME || (play_state > PLAY_STATE_UPDATE_STATS && vram_row >= $0C)
+        handle_subframe_nmi()
+    else
+        {MMC5_SCANLINE_STATUS}($00)
+    // DEBUG
+
+    // necessary to prevent a lag-frame type thing
+    ppu_set_scroll(0, 0)
+
+fn handle_subframe_render()
+: +inline
+
+fn handle_game_render()
+: +inline
     if game_render_flags & GAME_RENDER_LINES > 0
         ppu_set_addr(ppu_addr_from_coords_ct(19, 3, 0))
         {PPUDATA}(lines_bcd.b)
@@ -64,28 +94,6 @@ fn render.game()
     // clear all flags at once
     game_render_flags &= ~(GAME_RENDER_LINES | GAME_RENDER_LEVEL |
         GAME_RENDER_SCORE | GAME_RENDER_PIECE_COUNT)
-    // tetris flash
-    ppu_set_addr($3F0E)
-    U flash_color = $00
-    if completed_lines == 4
-        if frame_counter & %11 == 0
-            flash_color = $30
-        if frame_counter & %111 == 0
-            set_sfx(SFX_TETRIS_END)
-    {PPUDATA}(flash_color)
-    // handle subframe polling
-    if play_state == PLAY_STATE_GAME || (play_state > PLAY_STATE_UPDATE_STATS && vram_row >= $0C)
-        // hack to clear interrupt so the subframe polls can run
-        cli()
-        {MMC5_SCANLINE_STATUS}($80)
-        subframe_index = 1
-        {MMC5_SCANLINE_COMPARE}(SCANLINES[1])
-        subframe_pad = update_pad(subframe_pad, raw_pads[0])
-    else
-        {MMC5_SCANLINE_STATUS}($00)
-
-    // necessary to prevent a lag-frame type thing
-    ppu_set_scroll(0, 0)
 
 fn update_game_palette()
     // reimplement glitched color behavior
