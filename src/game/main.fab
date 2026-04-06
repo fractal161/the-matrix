@@ -154,6 +154,7 @@ mode game()
         {PPUDATA}($0B)
         // TODO: patch in height box
 
+    ppu_set_scroll(0, 0)
     safe_enable_rendering()
     if is_demo
         level_number = 0

@@ -1,8 +1,11 @@
 ct Int NUM_SUBFRAMES = 8
-ct U[NUM_SUBFRAMES] SCANLINES = U[](246, 17, 50, 82, 115, 148, 180, 213)
+// first entry experimentally tested
+ct U[NUM_SUBFRAMES] SCANLINES = U[](241, 12, 45, 77, 110, 143, 175, 208)
 
 vars /game
     U subframe_index = 0
+    // 
+    Pad subframe_pad
 
 irq subframe_poll()
     // acknowledge
@@ -14,8 +17,11 @@ irq subframe_poll()
         subframe_index = 0
     else
         {MMC5_SCANLINE_COMPARE}(SCANLINES[subframe_index])
+    poll_pads() // stored into raw_pads
 
-
+fn handle_subframe_nmi()
+    // TODO: copy pads here
+    subframe_pad = update_pad(subframe_pad, raw_pads[0])
 
 fn set_breakpoint(UU addr)
     {addr}($FF)

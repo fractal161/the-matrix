@@ -73,22 +73,19 @@ fn render.game()
         if frame_counter & %111 == 0
             set_sfx(SFX_TETRIS_END)
     {PPUDATA}(flash_color)
-    // necessary to prevent a lag-frame type thing
-    ppu_set_scroll(0, 0)
-    // hack to clear interrupt so the subframe polls can run
-    cli()
-    // enables subframe polling
-    if play_state == PLAY_STATE_GAME
+    // handle subframe polling
+    if play_state == PLAY_STATE_GAME || (play_state > PLAY_STATE_UPDATE_STATS && vram_row >= $0C)
+        // hack to clear interrupt so the subframe polls can run
+        cli()
         {MMC5_SCANLINE_STATUS}($80)
         subframe_index = 1
         {MMC5_SCANLINE_COMPARE}(SCANLINES[1])
+        subframe_pad = update_pad(subframe_pad, raw_pads[0])
     else
         {MMC5_SCANLINE_STATUS}($00)
 
-asm fn cli()
-: employs
-    cli
-    rts
+    // necessary to prevent a lag-frame type thing
+    ppu_set_scroll(0, 0)
 
 fn update_game_palette()
     // reimplement glitched color behavior
