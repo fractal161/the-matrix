@@ -68,6 +68,9 @@ fn render.game()
 
 fn handle_subframe_render()
 : +inline
+    if subframe_render_flags & SUBFRAME_RENDER_INPUT > 0
+        input_stream_index += 1
+    subframe_render_flags = 0
 
 fn handle_game_render()
 : +inline
