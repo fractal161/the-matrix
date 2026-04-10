@@ -94,9 +94,11 @@ fn handle_game_render()
         UU count = piece_counts_bcd[piece_type]
         {PPUDATA}(count.b)
         print_byte(count.a)
+    if game_render_flags & GAME_RENDER_NEXT_PIECE > 0
+        write_next_piece_tiles()
     // clear all flags at once
     game_render_flags &= ~(GAME_RENDER_LINES | GAME_RENDER_LEVEL |
-        GAME_RENDER_SCORE | GAME_RENDER_PIECE_COUNT)
+        GAME_RENDER_SCORE | GAME_RENDER_PIECE_COUNT | GAME_RENDER_NEXT_PIECE)
 
 fn update_game_palette()
     // reimplement glitched color behavior

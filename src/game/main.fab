@@ -41,6 +41,8 @@ fn update_timers_and_check_select()
     gravity_timer += 1
     if VERSION != VERSION_NWC && pads[0].pressed & BUTTON_SELECT > 0
         show_next_piece = !show_next_piece
+        // we need to update
+        game_render_flags |= GAME_RENDER_NEXT_PIECE
 
 // returns true if should 
 fn update_leaderboard() Bool
@@ -102,7 +104,7 @@ fn handle_pause()
     update_audio()
 
 fn game_logic()
-    hide_oam(0) // TODO: can probably just reset a few sprites to save cycles
+    hide_oam(0)
     update_timers_and_check_select()
     next_nesfab_mode = handle_game_over()
     if next_nesfab_mode != NESFAB_MODE_GAME
@@ -173,7 +175,7 @@ mode game()
 
     if game_type == GAME_TYPE_B
         lines_bcd = $25
-    game_render_flags = GAME_RENDER_PIECE_COUNT | GAME_RENDER_SCORE | GAME_RENDER_LEVEL | GAME_RENDER_LINES
+    game_render_flags = GAME_RENDER_PIECE_COUNT | GAME_RENDER_SCORE | GAME_RENDER_LEVEL | GAME_RENDER_LINES | GAME_RENDER_NEXT_PIECE
     update_audio_and_nmi_wait()
     if game_type == GAME_TYPE_B
         // TODO: init b-type playfield

@@ -123,6 +123,8 @@ fn game_action.get_next_piece() U
     increment_piece_count(active_piece_id)
     next_piece_id = get_next_piece_id()
     secondary_fall_timer = 0
+    // queue piece for draw
+    game_render_flags |= GAME_RENDER_NEXT_PIECE
     return PLAY_STATE_GAME
 
 // allegedly waits for something but idk what, will rename later
@@ -168,7 +170,7 @@ ct Fn.game_action[10] game_actions = Fn.game_action[](
 fn update_player()
     play_state = game_actions[play_state]()
     stage_active_piece_sprites()
-    stage_next_piece_sprites()
+    // stage_next_piece_sprites()
 
 // top left coordinate is 96, 47 ($60, $2F) (12, 6 in tiles)
 fn stage_active_piece_sprites()
@@ -190,6 +192,24 @@ ct U[7] NEXT_PIECE_X = U[](
 ct U[7] NEXT_PIECE_Y = U[](
     119, 119, 119, 119, 119, 119, 123
 )
+
+fn write_next_piece_tiles()
+: +inline
+    U piece_type = piece_id_to_type_table[next_piece_id]
+    if !show_next_piece
+        piece_type = len(next_piece_tile_ptrs) - 1
+    CC ptr = next_piece_tile_ptrs[piece_type]
+    ppu_set_addr(ppu_addr_from_coords_ct(24, 15, 0))
+    // first four
+    {PPUDATA}(read U(ptr))
+    {PPUDATA}(read U(ptr))
+    {PPUDATA}(read U(ptr))
+    {PPUDATA}(read U(ptr))
+    ppu_set_addr(ppu_addr_from_coords_ct(24, 16, 0))
+    {PPUDATA}(read U(ptr))
+    {PPUDATA}(read U(ptr))
+    {PPUDATA}(read U(ptr))
+    {PPUDATA}(read U(ptr))
 
 fn stage_next_piece_sprites()
     if !show_next_piece

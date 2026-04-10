@@ -247,25 +247,35 @@ omni data
             PieceTile(0, 0, GAME_TILE_HIDDEN),
         )
 
-// ct CC[] next_piece_ptrs = CC[](
-// )
-// 
-// omni data
-//     [] next_piece_tiles
-//         label t
-//             U[8]()
-//         label j
-//             U[8]()
-//         label z
-//             U[8]()
-//         label o
-//             U[8]()
-//         label s
-//             U[8]()
-//         label l
-//             U[8]()
-//         label i
-//             U[8]()
+ct CC[] next_piece_tile_ptrs = CC[](
+    CC(next_piece_tiles.t),
+    CC(next_piece_tiles.j),
+    CC(next_piece_tiles.z),
+    CC(next_piece_tiles.o),
+    CC(next_piece_tiles.s),
+    CC(next_piece_tiles.l),
+    CC(next_piece_tiles.i),
+    CC(next_piece_tiles.none),
+)
+
+omni data
+    [] next_piece_tiles
+        label t
+            U[8]($90, $91, $91, $92, $FF, $90, $92, $FF)
+        label j
+            U[8]($93, $94, $94, $95, $FF, $FF, $93, $95)
+        label z
+            U[8]($96, $97, $98, $FF, $FF, $96, $97, $98)
+        label o
+            U[8]($FF, $7B, $7B, $FF, $FF, $7B, $7B, $FF)
+        label s
+            U[8]($FF, $93, $94, $95, $93, $94, $95, $FF)
+        label l
+            U[8]($96, $97, $97, $98, $96, $98, $FF, $FF)
+        label i
+            U[8]($99, $99, $99, $99, $9A, $9A, $9A, $9A)
+        label none
+            U[8]($FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF)
 
 
 fn get_piece_tileset(U piece_id) PieceTileset
