@@ -103,6 +103,7 @@ ct CC[] piece_orientation_ptrs = CC[](
     CC(piece_orientation_data.none),
 )
 
+
 omni data
     [] piece_orientation_data
         label tu
@@ -245,6 +246,27 @@ omni data
             PieceTile(0, 0, GAME_TILE_HIDDEN),
             PieceTile(0, 0, GAME_TILE_HIDDEN),
         )
+
+// ct CC[] next_piece_ptrs = CC[](
+// )
+// 
+// omni data
+//     [] next_piece_tiles
+//         label t
+//             U[8]()
+//         label j
+//             U[8]()
+//         label z
+//             U[8]()
+//         label o
+//             U[8]()
+//         label s
+//             U[8]()
+//         label l
+//             U[8]()
+//         label i
+//             U[8]()
+
 
 fn get_piece_tileset(U piece_id) PieceTileset
     CC ptr = piece_orientation_ptrs[piece_id]
