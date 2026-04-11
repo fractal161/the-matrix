@@ -87,7 +87,7 @@ fn check_for_reset_key() Bool
         return NESFAB_MODE_LEGAL
     return NESFAB_MODE_GAME
 
-ct U[5] PAUSE_TILES = U[]($19, $0A, $1E, $1C, $0E)
+ct U[5] PAUSE_TILES = U[]($85, $86, $87, $88, $89)
 
 fn handle_pause()
     // stage pause sprite after current/next
@@ -137,8 +137,10 @@ mode game()
     safe_disable_rendering()
     // mmc1_set_chr_0(CHR_GAME)
     mmc5_chr_select_4k(0, CHR_GAME)
-    // make both sprite/bg point to chr 0
-    ppu_ctrl &= ~(PPUCTRL_SPR_PT_1000 | PPUCTRL_BG_PT_1000)
+    mmc5_chr_select_4k(1, CHR_GAME_SPRITES)
+    // bg points to $0000, sprite points to $1000
+    ppu_ctrl = PPUCTRL_NMI_ON | PPUCTRL_SPR_PT_1000 | PPUCTRL_NT_2000
+    {PPUDATA}(ppu_ctrl)
     ppu_upload_full_palette(@palette_game)
     load_nt(@nt_game)
     ppu_set_addr(ppu_addr_from_coords_ct(24, 5, 0))

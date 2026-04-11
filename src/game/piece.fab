@@ -267,7 +267,8 @@ omni data
         label z
             U[8]($96, $97, $98, $FF, $FF, $96, $97, $98)
         label o
-            U[8]($FF, $7B, $7B, $FF, $FF, $7B, $7B, $FF)
+            U[8]($FF, GAME_TILE_1, GAME_TILE_1, $FF,
+                 $FF, GAME_TILE_1, GAME_TILE_1, $FF)
         label s
             U[8]($FF, $93, $94, $95, $93, $94, $95, $FF)
         label l

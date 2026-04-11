@@ -40,7 +40,7 @@ ct U SUBFRAME_RENDER_HZRAW = $40
 ct U INPUT_STREAM_TILE_OFFSET = $90
 
 ct U CHR_TITLE_MENU   = $00
-ct U CHR_TYPEB_ENDING = $01
+ct U CHR_GAME_SPRITES = $01
 ct U CHR_TYPEA_ENDING = $02
 ct U CHR_GAME         = $03
 
@@ -51,9 +51,9 @@ ct U MENU_TILE_CURSOR = $FC
 // TODO: move a bunch of these to skin
 ct U CURTAIN_TILE = $4F
 
-ct U GAME_TILE_1 = $7B
-ct U GAME_TILE_2 = $7C
-ct U GAME_TILE_3 = $7D
+ct U GAME_TILE_1 = $80
+ct U GAME_TILE_2 = $81
+ct U GAME_TILE_3 = $82
 ct U GAME_TILE_EMPTY = $EF
 ct U GAME_TILE_HIDDEN = $FF
 
