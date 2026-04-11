@@ -75,9 +75,10 @@ fn handle_subframe_poll()
 
 // used in another state to reset vars
 fn handle_subframe_cleanup()
-    for U i = 0; i < INPUT_STREAM_LENGTH; i += 1
-        ab_input_stream[i] = 0
-        lr_input_stream[i] = 0
+: +inline
+    // for U i = 0; i < INPUT_STREAM_LENGTH; i += 1
+    //     ab_input_stream[i] = 0
+    //     lr_input_stream[i] = 0
     input_stream_index = 0
     stat_input_delay = $FF
     lr_this_frame = 0

@@ -110,6 +110,7 @@ fn game_action.check_b_type_done() U
     return PLAY_STATE_RECEIVE_GARBAGE
 
 fn game_action.receive_garbage() U
+    handle_subframe_cleanup()
     return PLAY_STATE_GET_NEXT_PIECE
 
 fn game_action.get_next_piece() U
@@ -171,6 +172,7 @@ fn update_player()
     play_state = game_actions[play_state]()
     stage_active_piece_sprites()
     // stage_next_piece_sprites()
+    stage_hud_sprites()
 
 // top left coordinate is 96, 47 ($60, $2F) (12, 6 in tiles)
 fn stage_active_piece_sprites()
@@ -183,7 +185,8 @@ fn stage_active_piece_sprites()
             continue
         U sprite_x = 96 + (x << 3)
         U sprite_y = 47 + (y << 3)
-        oam_index = push_oam(oam_index, sprite_x, sprite_y, tile.tile_type, %00000010)
+        oam_index = push_oam(oam_index, sprite_x, sprite_y, tile.tile_type,
+            GAME_SPRITE_PAL_PIECE)
 
 ct U[7] NEXT_PIECE_X = U[](
     204, 204, 204, 208, 204, 204, 208

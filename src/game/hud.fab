@@ -1,0 +1,31 @@
+// todo: call this after last poll?
+fn stage_hud_sprites()
+    stage_lr_input_stream_sprites()
+    stage_ab_input_stream_sprites()
+
+// TODO: this is delayed a frame!
+fn stage_lr_input_stream_sprites()
+: +inline
+    for U i = 0; i < input_stream_index; i += 1
+        // get tile type
+        U sprite_y = 23 + (i << 3)
+        U tile = lr_input_stream[i]
+        if tile > 0
+            // complicated logic
+            while !(tile >>= 1)
+                sprite_y += 1
+            oam_index = push_oam(oam_index, 80, sprite_y,
+                tile, GAME_SPRITE_PAL_LR)
+
+fn stage_ab_input_stream_sprites()
+: +inline
+    for U i = 0; i < input_stream_index; i += 1
+        // get tile type
+        U sprite_y = 23 + (i << 3)
+        U tile = ab_input_stream[i]
+        if tile > 0
+            // complicated logic
+            while !(tile >>= 1)
+                sprite_y += 1
+            oam_index = push_oam(oam_index, 72, sprite_y,
+                tile, GAME_SPRITE_PAL_AB)
