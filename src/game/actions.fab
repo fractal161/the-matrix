@@ -172,7 +172,6 @@ fn update_player()
     play_state = game_actions[play_state]()
     stage_active_piece_sprites()
     // stage_next_piece_sprites()
-    stage_hud_sprites()
 
 // top left coordinate is 96, 47 ($60, $2F) (12, 6 in tiles)
 fn stage_active_piece_sprites()

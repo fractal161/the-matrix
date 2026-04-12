@@ -56,11 +56,6 @@ fn render.game()
         if frame_counter & %111 == 0
             set_sfx(SFX_TETRIS_END)
     {PPUDATA}(flash_color)
-    // handle subframe polling
-    if play_state == PLAY_STATE_GAME || (play_state > PLAY_STATE_UPDATE_STATS && vram_row >= $0C)
-        handle_subframe_nmi()
-    else
-        {MMC5_SCANLINE_STATUS}($00)
     // DEBUG
 
     // necessary to prevent a lag-frame type thing
@@ -88,12 +83,6 @@ fn handle_game_render()
         print_byte(score_bcd.c)
         print_byte(score_bcd.b)
         print_byte(score_bcd.a)
-    if game_render_flags & GAME_RENDER_PIECE_COUNT > 0
-        U piece_type = piece_id_to_type_table[active_piece_id]
-        ppu_set_addr(PIECE_STAT_ROW_TABLE()[piece_type])
-        UU count = piece_counts_bcd[piece_type]
-        {PPUDATA}(count.b)
-        print_byte(count.a)
     if game_render_flags & GAME_RENDER_NEXT_PIECE > 0
         write_next_piece_tiles()
     // clear all flags at once

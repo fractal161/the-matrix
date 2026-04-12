@@ -65,13 +65,13 @@ fn handle_subframe_poll()
         // don't increment input_stream_index here (it's updated during nmi)
     // update input delay
     if is_lr_pressed && stat_input_delay == $FF
+        // TODO: we should move this to the 
         stat_input_delay = (input_stream_index << 3) + subframe_index
         subframe_render_flags |= SUBFRAME_RENDER_DELAY
-    // here we perform end-of-frame tasks
-    // this is where stats and stuff get updated, this is where we queue
-    // renders, etc
+    // end of frame tasks. want to keep this lean because this does limit
+    // what can be done
     if subframe_index == NUM_SUBFRAMES - 1
-        lr_last_frame = lr_this_frame
+        update_hud_immediate()
 
 // used in another state to reset vars
 fn handle_subframe_cleanup()

@@ -122,7 +122,14 @@ fn game_logic()
     update_audio()
 
 nmi game_nmi()
+    // update 
     main_nmi_fn()
+    lr_last_frame = lr_this_frame
+    // handle subframe polling
+    if play_state == PLAY_STATE_GAME || (play_state > PLAY_STATE_UPDATE_STATS && vram_row >= $0C)
+        handle_subframe_nmi()
+    else
+        {MMC5_SCANLINE_STATUS}($00)
     fence
     if paused
         handle_pause()
@@ -190,6 +197,7 @@ mode game()
     // spinlock
     while true
         nmi
+        update_hud_delayed()
         // handle jumps for gameover
         if next_nesfab_mode == NESFAB_MODE_HIGH_SCORE
             goto mode high_score_entry(lb_rank_achieved)

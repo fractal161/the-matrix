@@ -43,8 +43,8 @@ nmi main_nmi()
     main_nmi_fn()
 
 fn main_nmi_fn()
+: +inline
     oam_index = 0
-    set_breakpoint($4444)
     poll_pads()
     fence
     nmi_render()
