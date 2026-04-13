@@ -58,8 +58,8 @@ fn handle_subframe_poll()
         subframe_render_flags |= SUBFRAME_RENDER_INPUT
         // don't increment input_stream_index here (it's updated during nmi)
     // update input delay
-    set_breakpoint($6000)
     if is_lr_pressed && stat_input_delay == $FF
+        set_breakpoint($6000)
         // update stat_input_delay immediately because it's easy
         stat_input_delay = (input_stream_index << 3) + subframe_index
         subframe_render_flags |= SUBFRAME_RENDER_DELAY
