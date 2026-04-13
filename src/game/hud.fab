@@ -4,22 +4,56 @@ struct DelayDigits
     UU decimal
     U dot
 
+struct MinLenDigits
+    U lead
+    UU decimal
+    U dot
+
+ct Int NUM_DELAYS = 6
+
 vars /hud
+    // input delay
     // real values are 0 - 8*23=184
-    U stat_input_delay = $FF
     // $EA if negative, $FF otherwise
     DelayDigits delay_digits
+    U[NUM_DELAYS] delay_graph = U[NUM_DELAYS]($FF)
+    // minimum input length
+    U current_len = 0
+    MinLenDigits min_len_digits
+
+// reset vars, prep for next thing
+fn advance_hud_state()
+: +inline
+    input_stream_index = 0
+    lr_this_frame = 0
+    lr_last_frame = 0
+    for U i = 0; i < NUM_DELAYS-1; i += 1
+        delay_graph[i] = delay_graph[i + 1]
+    delay_graph[NUM_DELAYS-1] = $FF
 
 // use lr_last_frame and input_stream_index - 1
 fn update_hud_delayed()
 : +inline
-    stage_hud_sprites()
+    stage_input_stream_sprites(lr_input_stream, 79, GAME_SPRITE_PAL_LR)
+    stage_input_stream_sprites(ab_input_stream, 71, GAME_SPRITE_PAL_AB)
+    stage_delay_graph()
+    // 
 
+// updates for the last subframe of the frame (i.e. staging tiles)
 // use lr_this_frame and input_stream_index for up-to-date info
 // subframe_index will be zero by this point
 fn update_hud_immediate()
 : +inline
     update_delay_tiles()
+
+// updates for every poll
+fn update_hud_poll(Bool poll)
+: +inline
+    // update input delay
+    if poll && delay_graph[NUM_DELAYS-1] == $FF
+        delay_graph[NUM_DELAYS-1] = (input_stream_index << 3) + subframe_index
+        subframe_render_flags |= SUBFRAME_RENDER_DELAY
+    // update min length
 
 // UUs for laziness
 ct UU[8] EIGHTH_DECIMALS = UU[]($0000, $0103, $0205, $0308,
@@ -27,6 +61,7 @@ ct UU[8] EIGHTH_DECIMALS = UU[]($0000, $0103, $0205, $0308,
 
 fn update_delay_tiles()
 : +inline
+    U stat_input_delay = delay_graph[NUM_DELAYS-1]
     if stat_input_delay < 17
         // [0, 16]: red text, negative
         delay_digits.sign = $EA
@@ -48,15 +83,10 @@ fn update_delay_tiles()
         delay_digits.decimal = EIGHTH_DECIMALS[stat_input_delay & %111]
 
 
-fn stage_hud_sprites()
-: +inline
-    stage_input_stream_sprites(lr_input_stream, 79, GAME_SPRITE_PAL_LR)
-    stage_input_stream_sprites(ab_input_stream, 71, GAME_SPRITE_PAL_AB)
-
 // TODO: this takes 10 scanlines per execution, which means we can't render
 // it in real time. is there a way to make this faster?
 fn stage_input_stream_sprites(U[INPUT_STREAM_LENGTH] input_stream,
-    U sprite_x, U palette)
+    U sprite_x, U pal)
 : +inline
     set_breakpoint($6000)
     for U i = 0; i < input_stream_index; i += 1
@@ -68,5 +98,29 @@ fn stage_input_stream_sprites(U[INPUT_STREAM_LENGTH] input_stream,
             while !(tile >>= 1)
                 sprite_y += 1
             oam_index = push_oam(oam_index, sprite_x, sprite_y,
-                tile, palette | ATTR_PRIORITY)
+                tile, pal | ATTR_PRIORITY)
     set_breakpoint($6000)
+
+fn stage_delay_graph()
+    // TODO: should cycle here to create flicker
+    for U i = 0; i < NUM_DELAYS; i += 1
+        if delay_graph[i] == $FF
+            continue
+        U sprite_x = (i + 2) << 3
+        U sprite_y = delay_graph[i] + 20
+        if sprite_y > 64
+            sprite_y = 64
+        // 0-16: red dot
+        // 17-24: green dot
+        // 25+: yellow dot
+        // default to green dot
+        U tile = $83
+        U pal = GAME_SPRITE_PAL_LR
+        if delay_graph[i] < 17
+            // red dot
+            pal = GAME_SPRITE_PAL_AB
+        if delay_graph[i] > 24
+            // yellow dot
+            tile = $84
+        oam_index = push_oam(oam_index, sprite_x, sprite_y,
+            tile, pal)

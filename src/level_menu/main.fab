@@ -56,7 +56,7 @@ fn handle_level_menu_input()
     if pads[0].pressed == BUTTON_DOWN
         if is_selecting_height && start_height < 3
             start_height += 3
-        if !is_selecting_height && start_level < 4
+        if !is_selecting_height && start_level < 5
             start_level += 5
         set_sfx(SFX_MENU_CHANGE)
     if pads[0].pressed == BUTTON_UP

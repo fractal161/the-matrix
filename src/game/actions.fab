@@ -106,7 +106,7 @@ fn game_action.check_b_type_done() U
         if VERSION == VERSION_PAL
             // TODO: b-type pal debug
         // TODO: everything else (copy graphics, play music, wait, then ending)
-    handle_subframe_cleanup()
+    advance_hud_state()
     return PLAY_STATE_RECEIVE_GARBAGE
 
 fn game_action.receive_garbage() U

@@ -159,9 +159,6 @@ mode game()
         ppu_set_addr(ppu_addr_from_coords_ct(3, 4, 0))
         {PPUDATA}($0B)
         // TODO: patch in height box
-
-    ppu_set_scroll(0, 0)
-    safe_enable_rendering()
     if is_demo
         level_number = 0
     else
@@ -180,12 +177,14 @@ mode game()
     if game_type == GAME_TYPE_B
         lines_bcd = $25
     game_render_flags = GAME_RENDER_PIECE_COUNT | GAME_RENDER_SCORE | GAME_RENDER_LEVEL | GAME_RENDER_LINES | GAME_RENDER_NEXT_PIECE
-    update_audio_and_nmi_wait()
     if game_type == GAME_TYPE_B
         // TODO: init b-type playfield
     next_nesfab_mode = NESFAB_MODE_GAME
     allegro = false
     set_music()
+    safe_enable_rendering()
+    update_audio_and_nmi_wait()
+    ppu_set_scroll(0, 0)
     // enable irq
     irq true
     {MMC5_SCANLINE_STATUS}($80)
