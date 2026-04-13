@@ -67,7 +67,6 @@ fn handle_subframe_render()
         {PPUDATA}(delay_digits.dot)
         {PPUDATA}(delay_digits.decimal.b)
         {PPUDATA}(delay_digits.decimal.a)
-        input_stream_index += 1
     subframe_render_flags = 0
 
 fn handle_game_render()

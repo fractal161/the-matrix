@@ -10,15 +10,15 @@ vars /hud
     // $EA if negative, $FF otherwise
     DelayDigits delay_digits
 
-// use lr_last_frame
+// use lr_last_frame and input_stream_index - 1
 fn update_hud_delayed()
 : +inline
+    stage_hud_sprites()
 
 // use lr_this_frame and input_stream_index for up-to-date info
 // subframe_index will be zero by this point
 fn update_hud_immediate()
 : +inline
-    stage_hud_sprites()
     update_delay_tiles()
 
 // UUs for laziness
@@ -53,9 +53,12 @@ fn stage_hud_sprites()
     stage_input_stream_sprites(lr_input_stream, 79, GAME_SPRITE_PAL_LR)
     stage_input_stream_sprites(ab_input_stream, 71, GAME_SPRITE_PAL_AB)
 
+// TODO: this takes 10 scanlines per execution, which means we can't render
+// it in real time. is there a way to make this faster?
 fn stage_input_stream_sprites(U[INPUT_STREAM_LENGTH] input_stream,
     U sprite_x, U palette)
 : +inline
+    set_breakpoint($6000)
     for U i = 0; i < input_stream_index; i += 1
         // get tile type
         U sprite_y = 23 + (i << 3)
@@ -66,3 +69,4 @@ fn stage_input_stream_sprites(U[INPUT_STREAM_LENGTH] input_stream,
                 sprite_y += 1
             oam_index = push_oam(oam_index, sprite_x, sprite_y,
                 tile, palette | ATTR_PRIORITY)
+    set_breakpoint($6000)

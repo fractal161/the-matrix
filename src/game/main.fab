@@ -104,7 +104,6 @@ fn handle_pause()
     update_audio()
 
 fn game_logic()
-    hide_oam(0)
     update_timers_and_check_select()
     next_nesfab_mode = handle_game_over()
     if next_nesfab_mode != NESFAB_MODE_GAME
@@ -130,6 +129,7 @@ nmi game_nmi()
         handle_subframe_nmi()
     else
         {MMC5_SCANLINE_STATUS}($00)
+    hide_oam(0)
 
 mode game()
 : nmi game_nmi
