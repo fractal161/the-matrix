@@ -42,11 +42,8 @@ fn render.game()
     else
         for U i = 0; i < 4; i += 1
             copy_board_row_to_vram()
-    // make sure only one of game_render/subframe_render happen for redundancy
-    if game_render_flags > 0
-        handle_game_render()
-    else if subframe_render_flags > 0
-        handle_subframe_render()
+    handle_game_render()
+    handle_subframe_render()
     // tetris flash
     ppu_set_addr($3F0E)
     U flash_color = $00
@@ -63,7 +60,13 @@ fn render.game()
 
 fn handle_subframe_render()
 : +inline
-    if subframe_render_flags & SUBFRAME_RENDER_INPUT > 0
+    if subframe_render_flags & SUBFRAME_RENDER_DELAY > 0
+        ppu_set_addr(ppu_addr_from_coords_ct(3, 11, 0))
+        {PPUDATA}(delay_digits.sign)
+        {PPUDATA}(delay_digits.lead)
+        {PPUDATA}(delay_digits.dot)
+        {PPUDATA}(delay_digits.decimal.b)
+        {PPUDATA}(delay_digits.decimal.a)
         input_stream_index += 1
     subframe_render_flags = 0
 

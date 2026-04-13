@@ -22,19 +22,15 @@ vars /game
     U subframe_index = 0 // 0-7
     U subframe_render_flags = 0
 
-    // STATISTICS (may become its own file probably not)
-
-    // real values are 0 - 8*23=184
-    U stat_input_delay = $FF
 
 fn handle_subframe_nmi()
     // hack to clear interrupt so the subframe polls can run
     cli()
     {MMC5_SCANLINE_STATUS}($80)
-    subframe_index = 1
     {MMC5_SCANLINE_COMPARE}(SCANLINES[0])
     // pads already polled, we only have to update
     subframe_pad = update_pad(subframe_pad, raw_pads[0])
+    fence
     handle_subframe_poll()
 
 irq subframe_poll()
@@ -45,10 +41,8 @@ irq subframe_poll()
     {MMC5_SCANLINE_COMPARE}(SCANLINES[subframe_index])
     poll_pads() // stored into raw_pads
     subframe_pad = update_pad(subframe_pad, raw_pads[0])
+    fence
     handle_subframe_poll()
-    subframe_index += 1
-    if subframe_index == NUM_SUBFRAMES
-        subframe_index = 0
 
 fn handle_subframe_poll()
     Bool is_lr_pressed = subframe_pad.held & (BUTTON_LEFT | BUTTON_RIGHT)
@@ -56,22 +50,29 @@ fn handle_subframe_poll()
     is_lr_pressed >=> lr_this_frame
     // update input stream
     if input_stream_index < INPUT_STREAM_LENGTH
-        // "assign by rotate right" aka the coolest operation ever
         Bool is_ab_pressed = subframe_pad.held & (BUTTON_A | BUTTON_B)
+        // "assign by rotate right" aka the coolest operation ever
         is_ab_pressed >=> ab_input_stream[input_stream_index]
         // then left/right
         is_lr_pressed >=> lr_input_stream[input_stream_index]
         subframe_render_flags |= SUBFRAME_RENDER_INPUT
         // don't increment input_stream_index here (it's updated during nmi)
     // update input delay
+    set_breakpoint($6000)
     if is_lr_pressed && stat_input_delay == $FF
-        // TODO: we should move this to the 
+        // update stat_input_delay immediately because it's easy
         stat_input_delay = (input_stream_index << 3) + subframe_index
         subframe_render_flags |= SUBFRAME_RENDER_DELAY
-    // end of frame tasks. want to keep this lean because this does limit
-    // what can be done
+    // end of frame tasks
     if subframe_index == NUM_SUBFRAMES - 1
+        // can use lr_this_frame
+    subframe_index += 1
+    if subframe_index == NUM_SUBFRAMES
+        subframe_index = 0
+        fence
         update_hud_immediate()
+        if input_stream_index < INPUT_STREAM_LENGTH
+            input_stream_index += 1
 
 // used in another state to reset vars
 fn handle_subframe_cleanup()
