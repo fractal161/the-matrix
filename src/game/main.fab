@@ -76,15 +76,13 @@ fn handle_game_over() U
     if play_state != PLAY_STATE_GAME_OVER
         return NESFAB_MODE_GAME
     render_mode = RENDER_GAME
-    if update_leaderboard()
-        return NESFAB_MODE_HIGH_SCORE
     return NESFAB_MODE_LEVEL_MENU
 
 // returns true if we should follow the dlr bug
 fn check_for_reset_key() Bool
     if pads[0].held == BUTTON_A | BUTTON_B | BUTTON_SELECT | BUTTON_START
         mute_audio()
-        return NESFAB_MODE_LEGAL
+        return NESFAB_MODE_LEVEL_MENU
     return NESFAB_MODE_GAME
 
 ct U[5] PAUSE_TILES = U[]($85, $86, $87, $88, $89)
@@ -196,13 +194,7 @@ mode game()
             game_logic()
         update_hud_delayed()
         // handle jumps for gameover
-        if next_nesfab_mode == NESFAB_MODE_HIGH_SCORE
-            goto mode high_score_entry(lb_rank_achieved)
-            : preserves
         if next_nesfab_mode == NESFAB_MODE_LEVEL_MENU
             update_audio_and_nmi_wait()
             goto mode level_menu()
-            : preserves
-        if next_nesfab_mode == NESFAB_MODE_LEGAL
-            goto mode legal()
             : preserves

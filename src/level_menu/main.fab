@@ -75,9 +75,9 @@ fn handle_level_menu_input()
         goto mode game()
         : preserves
     if pads[0].pressed == BUTTON_B
-        set_sfx(SFX_MENU_SELECT)
-        goto mode type_menu()
-        : preserves
+        // set_sfx(SFX_MENU_SELECT)
+        // goto mode type_menu()
+        // : preserves
 
 fn stage_level_menu_cursor(U x, U y)
     for U i = 0; i < 2; i += 1

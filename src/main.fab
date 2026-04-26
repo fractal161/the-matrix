@@ -78,6 +78,18 @@ mode main()
     safe_disable_rendering()
     for U i = 0; i < 4; i += 1
         reset_nametable(i)
+
+    mute_audio()
+    // set chr to 4kb + 4kb, which is what mmc1 uses
+    {MMC5_CHR_MODE}(MMC5_CHR_MODE_4K)
+    // mmc1_set_chr_0(CHR_TITLE_MENU)
+    mmc5_chr_select_4k(0, CHR_TITLE_MENU)
+    // make both sprite/bg point to chr 0
+    ppu_ctrl &= ~(PPUCTRL_SPR_PT_1000 | PPUCTRL_BG_PT_1000)
+    show_next_piece = true
+    {PPUCTRL}(ppu_ctrl)
+
     safe_enable_rendering()
-    goto mode legal()
+
+    goto mode level_menu()
     : preserves

@@ -114,8 +114,8 @@ fn stage_delay_graph()
         if delay_graph[i] == $FF
             continue
         U sprite_x = delay_graph[i] + 112
-        if delay_graph[i] > 64
-            sprite_x = 176
+        if delay_graph[i] > 240-112
+            sprite_x = 240
         U sprite_y = 215
         // 0-16: red dot
         // 17-24: green dot
