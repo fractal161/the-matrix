@@ -121,7 +121,6 @@ fn game_logic()
     update_audio()
 
 nmi game_nmi()
-    // update 
     main_nmi_fn()
     lr_last_frame = lr_this_frame
     // handle subframe polling

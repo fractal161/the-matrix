@@ -61,7 +61,7 @@ fn render.game()
 fn handle_subframe_render()
 : +inline
     if subframe_render_flags & SUBFRAME_RENDER_DELAY > 0
-        ppu_set_addr(ppu_addr_from_coords_ct(3, 11, 0))
+        ppu_set_addr(ppu_addr_from_coords_ct(3, 25, 0))
         {PPUDATA}(delay_digits.sign)
         {PPUDATA}(delay_digits.lead)
         {PPUDATA}(delay_digits.dot)

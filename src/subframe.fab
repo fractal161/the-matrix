@@ -1,6 +1,7 @@
 ct Int NUM_SUBFRAMES = 8
-// board height + 3, which is how many frames before we're tracking track
-ct Int INPUT_STREAM_LENGTH = 23
+// basically when we start doing negative
+ct Int NEGATIVE_INPUT_OFFSET = 3
+ct Int INPUT_STREAM_LENGTH = 20 + NEGATIVE_INPUT_OFFSET
 // last entry is nmi poll, experimentally tested
 ct U[NUM_SUBFRAMES] SCANLINES = U[](12, 45, 77, 110, 143, 175, 208, 241)
 

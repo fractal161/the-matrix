@@ -4,12 +4,14 @@ struct DelayDigits
     UU decimal
     U dot
 
-struct MinLenDigits
+struct MinSpaceDigits
     U lead
     UU decimal
     U dot
 
-ct Int NUM_DELAYS = 6
+ct Int NUM_DELAYS = 8
+// spaces are inputs/gaps
+ct Int NUM_SPACES = 6
 
 vars /hud
     // input delay
@@ -18,17 +20,21 @@ vars /hud
     DelayDigits delay_digits
     U[NUM_DELAYS] delay_graph = U[NUM_DELAYS]($FF)
     // minimum input length
-    U current_len = 0
-    MinLenDigits min_len_digits
+    U[NUM_SPACES] input_lengths = U[NUM_SPACES](0)
+    U[NUM_SPACES] gap_lengths = U[NUM_SPACES](0)
+    U current_space = 0
+    MinSpaceDigits min_space_digits
 
 // reset vars, prep for next thing
 fn advance_hud_state()
 : +inline
+    // reset everything
     input_stream_index = 0
     lr_this_frame = 0
     lr_last_frame = 0
     for U i = 0; i < NUM_DELAYS-1; i += 1
         delay_graph[i] = delay_graph[i + 1]
+    // shift delay_graph
     delay_graph[NUM_DELAYS-1] = $FF
 
 // use lr_last_frame and input_stream_index - 1
@@ -62,14 +68,16 @@ ct UU[8] EIGHTH_DECIMALS = UU[]($0000, $0103, $0205, $0308,
 fn update_delay_tiles()
 : +inline
     U stat_input_delay = delay_graph[NUM_DELAYS-1]
-    if stat_input_delay < 17
+    ct U RED_THRESHOLD = 8*NEGATIVE_INPUT_OFFSET - 7
+    ct U WN_THRESHOLD = 8*NEGATIVE_INPUT_OFFSET
+    if stat_input_delay < RED_THRESHOLD
         // [0, 16]: red text, negative
         delay_digits.sign = $EA
         // add $E0 to everything for red text
         delay_digits.lead = 3 - ((stat_input_delay + 7) >> 3) + $E0
         delay_digits.dot = $EB
         delay_digits.decimal = EIGHTH_DECIMALS[(8 - stat_input_delay) & %111] + $E0E0
-    else if stat_input_delay < 24
+    else if stat_input_delay < WN_THRESHOLD
         // [17, 23]: white text, negative
         delay_digits.sign = $24
         delay_digits.lead = 3 - ((stat_input_delay + 7) >> 3)
@@ -102,25 +110,25 @@ fn stage_input_stream_sprites(U[INPUT_STREAM_LENGTH] input_stream,
     set_breakpoint($6000)
 
 fn stage_delay_graph()
-    // TODO: should cycle here to create flicker
     for U i = 0; i < NUM_DELAYS; i += 1
         if delay_graph[i] == $FF
             continue
-        U sprite_x = (i + 2) << 3
-        U sprite_y = delay_graph[i] + 20
-        if sprite_y > 64
-            sprite_y = 64
+        U sprite_x = delay_graph[i] + 112
+        if delay_graph[i] > 64
+            sprite_x = 176
+        U sprite_y = 215
         // 0-16: red dot
         // 17-24: green dot
         // 25+: yellow dot
         // default to green dot
         U tile = $83
         U pal = GAME_SPRITE_PAL_LR
-        if delay_graph[i] < 17
+        ct U RED_THRESHOLD = 8*NEGATIVE_INPUT_OFFSET - 7
+        ct U YELLOW_THRESHOLD = 8*NEGATIVE_INPUT_OFFSET + 8
+        if delay_graph[i] < RED_THRESHOLD
             // red dot
             pal = GAME_SPRITE_PAL_AB
-        if delay_graph[i] > 24
+        if delay_graph[i] > YELLOW_THRESHOLD
             // yellow dot
             tile = $84
-        oam_index = push_oam(oam_index, sprite_x, sprite_y,
-            tile, pal)
+        oam_index = push_oam(oam_index, sprite_x, sprite_y, tile, pal)
