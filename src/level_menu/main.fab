@@ -1,4 +1,5 @@
 ct Int LEADERBOARD_NAME_LENGTH = 6
+
 struct LeaderboardEntry
     U[LEADERBOARD_NAME_LENGTH] name
     UUU score_bcd
@@ -8,7 +9,8 @@ vars /level_menu
     Bool is_selecting_height = false
 
 vars
-    U start_level = 0
+    U cursor_idx = 0
+    U start_level = 29
     U start_height = 0
 
     // use read/write HighScore(ptr) to interface
@@ -39,38 +41,72 @@ fn choose_random_hole()
     do while prng_value.b & $0F < $0A
         advance_prng()
 
+fn level_menu_change.type(U change)
+    // TODO: implement
+
+
+fn level_menu_change.level(U change)
+    U cursor_x = get_level_menu_cursor_x()
+    if cursor_x == 0
+        if change == $01 && start_level < 30
+            start_level += 10
+        if change == $FF && start_level > 9
+            start_level -= 10
+    else
+        start_level += change
+        if start_level == $FF
+            start_level = 0
+        if start_level == 40
+            start_level = 39
+    level_menu_render_flags |= LEVEL_MENU_RENDER_LEVEL
+
+fn level_menu_print.level()
+    MenuSection section = get_level_menu_section()
+    ppu_set_addr(section.start_ppu_addr)
+    print_byte(two_digit_table[start_level])
+
+ct U[100] two_digit_table = U[](
+    $00,$01,$02,$03,$04,$05,$06,$07,$08,$09,
+    $10,$11,$12,$13,$14,$15,$16,$17,$18,$19,
+    $20,$21,$22,$23,$24,$25,$26,$27,$28,$29,
+    $30,$31,$32,$33,$34,$35,$36,$37,$38,$39,
+    $40,$41,$42,$43,$44,$45,$46,$47,$48,$49,
+    $50,$51,$52,$53,$54,$55,$56,$57,$58,$59,
+    $60,$61,$62,$63,$64,$65,$66,$67,$68,$69,
+    $70,$71,$72,$73,$74,$75,$76,$77,$78,$79,
+    $80,$81,$82,$83,$84,$85,$86,$87,$88,$89,
+    $90,$91,$92,$93,$94,$95,$96,$97,$98,$99,
+)
+
+fn level_menu_change.floor(U change)
+    // TODO: implement
+fn level_menu_change.drought(U change)
+    // TODO: implement
+fn level_menu_change.b_type_height(U change)
+    // TODO: implement
+
 fn handle_level_menu_input()
+    U cursor_y = get_level_menu_cursor_y()
     // first check/handle dpad (staging sprites if necessary
     if pads[0].pressed == BUTTON_RIGHT
-        if is_selecting_height && start_height < 5
-            start_height += 1
-        if !is_selecting_height && start_level < 9
-            start_level += 1
+        cursor_idx += 1
+        if cursor_idx == MENU_CURSOR_COUNTS[game_type]
+            cursor_idx = 0
         set_sfx(SFX_MENU_CHANGE)
     if pads[0].pressed == BUTTON_LEFT
-        if is_selecting_height && start_height > 0
-            start_height -= 1
-        if !is_selecting_height && start_level > 0
-            start_level -= 1
+        cursor_idx -= 1
+        if cursor_idx == $FF
+            cursor_idx = MENU_CURSOR_COUNTS[game_type] - 1
         set_sfx(SFX_MENU_CHANGE)
     if pads[0].pressed == BUTTON_DOWN
-        if is_selecting_height && start_height < 3
-            start_height += 3
-        if !is_selecting_height && start_level < 5
-            start_level += 5
+        // TODO: A+D handling
+        get_level_menu_change_fn()($FF)
         set_sfx(SFX_MENU_CHANGE)
     if pads[0].pressed == BUTTON_UP
-        if is_selecting_height && start_height >= 3
-            start_height -= 3
-        if !is_selecting_height && start_level >= 5
-            start_level -= 5
-        set_sfx(SFX_MENU_CHANGE)
-    if game_type == GAME_TYPE_B && pads[0].pressed == BUTTON_A
-        is_selecting_height = !is_selecting_height
+        // TODO: A+U handling
+        get_level_menu_change_fn()($01)
         set_sfx(SFX_MENU_CHANGE)
     if pads[0].pressed == BUTTON_START
-        if pads[0].held == BUTTON_START | BUTTON_A
-            start_level += 10
         set_sfx(SFX_MENU_SELECT)
         goto mode game()
         : preserves
@@ -108,7 +144,7 @@ fn stage_level_menu_sprites()
 mode level_menu()
 : nmi main_nmi
     mute_audio()
-    render_mode = RENDER_MENU_SCREEN
+    render_mode = RENDER_LEVEL_MENU
     safe_disable_rendering()
     fence
     // mmc1_set_chr_0(CHR_TITLE_MENU)
@@ -122,24 +158,11 @@ mode level_menu()
         ppu_upload_full_palette(@palette_b_level_menu)
 
     load_nt(@nt_level_menu)
-
-    if game_type == GAME_TYPE_A
-        // set to A-type
-        ppu_set_addr(ppu_addr_from_coords_ct(13, 3, 0))
-        {PPUDATA}($0A)
-        // erase height
-        for U i = 0; i < 8; i += 1
-            ppu_set_addr_coords(19, 7+i, 0)
-            for U j = 0; j < 8; j += 1
-                {PPUDATA}($FF)
-    print_leaderboard()
     fence
     safe_enable_rendering()
-    while start_level >= 10
-        start_level -= 10
     while true
         handle_level_menu_input()
         stage_level_menu_sprites()
-        choose_random_hole()
-        choose_random_hole()
+        // choose_random_hole()
+        // choose_random_hole()
         update_audio_and_nmi_wait()

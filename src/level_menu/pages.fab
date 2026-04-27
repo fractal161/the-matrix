@@ -1,0 +1,161 @@
+ct U CURSOR_TIMEOUT = 48
+
+vars /level_menu
+    U level_menu_render_flags = 0
+    U cursor_timer = 0
+
+ct U LEVEL_MENU_RENDER_GOOFY = $01
+ct U LEVEL_MENU_RENDER_LAG   = $02
+ct U LEVEL_MENU_RENDER_LEVEL = $04
+ct U LEVEL_MENU_RENDER_SEED  = $08
+
+struct MenuSection
+    U field_count
+    U start_x
+    U start_y
+    UU start_ppu_addr
+
+// common across all
+ct U MENU_SECTION_TYPE = 0
+ct U MENU_SECTION_LEVEL = 1
+// a type
+ct U A_TYPE_SECTION_FLOOR = 2
+ct U A_TYPE_SECTION_DROUGHT = 3
+ct U A_TYPE_SECTION_COUNT = 4
+// b type
+ct U B_TYPE_SECTION_HEIGHT = 2
+ct U B_TYPE_SECTION_FLOOR = 3
+ct U B_TYPE_SECTION_DROUGHT = 4
+ct U B_TYPE_SECTION_COUNT = 5
+// c type (checkerboard)
+ct U C_TYPE_SECTION_HEIGHT = 2
+ct U C_TYPE_SECTION_DROUGHT = 3
+ct U C_TYPE_SECTION_COUNT = 4
+// d type (drills, TODO ignoring for now)
+ct U D_TYPE_SECTION_FLOOR = 2
+ct U D_TYPE_SECTION_QTAP = 3
+ct U D_TYPE_SECTION_PIECE = 4
+ct U D_TYPE_SECTION_COUNT = 5
+
+ct U[GAME_TYPE_COUNT] MENU_SECTION_COUNTS = U[](
+    A_TYPE_SECTION_COUNT,
+    B_TYPE_SECTION_COUNT,
+)
+
+ct MenuSection[TOTAL_SECTION_COUNT] ALL_MENU_SECTIONS = MenuSection[](
+    // a-type
+    _menu_section_maker(1, 21, 10, 0),
+    _menu_section_maker(2, 20, 13, 0),
+    _menu_section_maker(1, 21, 16, 0),
+    _menu_section_maker(1, 20, 19, 0),
+    // b-type
+    _menu_section_maker(1, 21, 10, 0),
+    _menu_section_maker(2, 20, 13, 0),
+    _menu_section_maker(1, 21, 16, 0),
+    _menu_section_maker(1, 21, 19, 0),
+    _menu_section_maker(1, 20, 22, 0),
+)
+// has to be separate from ALL_MENU_SECTIONS for compile time reasons
+ct Fn.level_menu_change[TOTAL_SECTION_COUNT] LEVEL_MENU_CHANGE_FNS = Fn.level_menu_change[](
+    // a-type
+    @(level_menu_change.type),
+    @(level_menu_change.level),
+    @(level_menu_change.floor),
+    @(level_menu_change.drought),
+    // b-type
+    @(level_menu_change.type),
+    @(level_menu_change.level),
+    @(level_menu_change.b_type_height),
+    @(level_menu_change.floor),
+    @(level_menu_change.drought),
+)
+
+// EVERYTHING BELOW THIS IS MEANT TO BE AUTOGEN
+
+ct fn _menu_section_maker(U field_count, U x, U y, U x_offset) MenuSection
+    return MenuSection(
+        field_count,
+        (x + x_offset) << 3,
+        y << 3,
+        ppu_addr_from_coords_ct(x, y, 0),
+    )
+
+ct fn _total_section_count() U
+    U total = 0
+    for U i = 0; i < GAME_TYPE_COUNT; i += 1
+        total += MENU_SECTION_COUNTS[i]
+    return total
+ct U TOTAL_SECTION_COUNT = _total_section_count()
+
+ct fn _menu_section_offsets() U[GAME_TYPE_COUNT]
+    U[GAME_TYPE_COUNT] offsets
+    offsets[0] = 0
+    for U i = 0; i < GAME_TYPE_COUNT-1; i += 1
+        offsets[i+1] = offsets[i] + MENU_SECTION_COUNTS[i]
+    return offsets
+ct U[GAME_TYPE_COUNT] MENU_SECTION_OFFSETS = _menu_section_offsets()
+
+ct fn _menu_cursor_counts() U[GAME_TYPE_COUNT]
+    U[GAME_TYPE_COUNT] menu_cursor_counts = U[GAME_TYPE_COUNT](0)
+    U section_idx = 0
+    for U i = 0; i < GAME_TYPE_COUNT; i += 1
+        for U j = 0; j < MENU_SECTION_COUNTS[i]; j += 1
+            menu_cursor_counts[i] += ALL_MENU_SECTIONS[section_idx].field_count
+            section_idx += 1
+    return menu_cursor_counts
+ct U[GAME_TYPE_COUNT] MENU_CURSOR_COUNTS = _menu_cursor_counts()
+
+ct fn _menu_cursor_offsets() U[GAME_TYPE_COUNT]
+    U[GAME_TYPE_COUNT] offsets
+    offsets[0] = 0
+    for U i = 0; i < GAME_TYPE_COUNT-1; i += 1
+        offsets[i+1] = offsets[i] + MENU_CURSOR_COUNTS[i]
+    return offsets
+ct U[GAME_TYPE_COUNT] MENU_CURSOR_OFFSETS = _menu_cursor_offsets()
+
+ct fn _menu_cursor_total() U
+    U total = 0
+    for U i = 0; i < GAME_TYPE_COUNT; i += 1
+        total += MENU_CURSOR_COUNTS[i]
+    return total
+ct U MENU_CURSOR_TOTAL = _menu_cursor_total()
+
+ct fn _menu_cursor_x_table() U[MENU_CURSOR_TOTAL]
+    U[MENU_CURSOR_TOTAL] x_table
+    U global_menu_cursor_idx = 0
+    for U i = 0; i < TOTAL_SECTION_COUNT; i += 1
+        U field_count = ALL_MENU_SECTIONS[i].field_count
+        for U j = 0; j < field_count; j += 1
+            x_table[global_menu_cursor_idx] = j
+            global_menu_cursor_idx += 1
+    return x_table
+ct U[MENU_CURSOR_TOTAL] MENU_CURSOR_X_TABLE = _menu_cursor_x_table()
+
+ct fn _menu_cursor_y_table() U[MENU_CURSOR_TOTAL]
+    U[MENU_CURSOR_TOTAL] y_table
+    U global_menu_cursor_idx = 0
+    for U i = 0; i < TOTAL_SECTION_COUNT; i += 1
+        U field_count = ALL_MENU_SECTIONS[i].field_count
+        for U j = 0; j < field_count; j += 1
+            y_table[global_menu_cursor_idx] = i
+            global_menu_cursor_idx += 1
+    return y_table
+ct U[MENU_CURSOR_TOTAL] MENU_CURSOR_Y_TABLE = _menu_cursor_y_table()
+
+fn get_level_menu_cursor_x() U
+    U offset = MENU_CURSOR_OFFSETS[game_type]
+    return MENU_CURSOR_X_TABLE[offset + cursor_idx]
+
+fn get_level_menu_cursor_y() U
+    U offset = MENU_CURSOR_OFFSETS[game_type]
+    return MENU_CURSOR_Y_TABLE[offset + cursor_idx]
+
+fn get_level_menu_section() MenuSection
+    U offset = MENU_SECTION_OFFSETS[game_type]
+    U cursor_y = get_level_menu_cursor_y()
+    return ALL_MENU_SECTIONS[offset + cursor_y]
+
+fn get_level_menu_change_fn() Fn.level_menu_change
+    U offset = MENU_SECTION_OFFSETS[game_type]
+    U cursor_y = get_level_menu_cursor_y()
+    return LEVEL_MENU_CHANGE_FNS[offset + cursor_y]
