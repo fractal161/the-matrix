@@ -4,10 +4,8 @@ vars /level_menu
     U level_menu_render_flags = 0
     U cursor_timer = 0
 
-ct U LEVEL_MENU_RENDER_GOOFY = $01
-ct U LEVEL_MENU_RENDER_LAG   = $02
-ct U LEVEL_MENU_RENDER_LEVEL = $04
-ct U LEVEL_MENU_RENDER_SEED  = $08
+ct U LEVEL_MENU_RENDER_LEVEL = $01
+ct U LEVEL_MENU_RENDER_FLOOR = $02
 
 struct MenuSection
     U field_count

@@ -12,6 +12,7 @@ vars
     U cursor_idx = 0
     U start_level = 29
     U start_height = 0
+    U floor = 0
 
     // use read/write HighScore(ptr) to interface
     [30] leaderboard_a
@@ -40,6 +41,24 @@ fn print_leaderboard()
 fn choose_random_hole()
     do while prng_value.b & $0F < $0A
         advance_prng()
+
+fn render.level_menu()
+    // set render to top-left nametable
+    ppu_ctrl &= %11111100 | PPUCTRL_NT_2000
+    {PPUCTRL}(ppu_ctrl)
+    // TODO: more details
+    if DEBUG
+        ppu_set_addr($2000)
+        print_byte(cursor_idx)
+        {PPUDATA}($FF)
+        print_byte(get_level_menu_cursor_x())
+        {PPUDATA}($FF)
+        print_byte(get_level_menu_cursor_y())
+    if level_menu_render_flags & LEVEL_MENU_RENDER_LEVEL > 0
+        level_menu_print.level()
+    if level_menu_render_flags & LEVEL_MENU_RENDER_FLOOR > 0
+        level_menu_print.floor()
+    level_menu_render_flags = 0
 
 fn level_menu_change.type(U change)
     // TODO: implement
@@ -79,7 +98,18 @@ ct U[100] two_digit_table = U[](
 )
 
 fn level_menu_change.floor(U change)
-    // TODO: implement
+    floor += change
+    if floor == $FF
+        floor = 0
+    if floor == 13
+        floor = 12
+    level_menu_render_flags |= LEVEL_MENU_RENDER_FLOOR
+
+fn level_menu_print.floor()
+    MenuSection section = get_level_menu_section()
+    ppu_set_addr(section.start_ppu_addr)
+    {PPUDATA}(floor)
+
 fn level_menu_change.drought(U change)
     // TODO: implement
 fn level_menu_change.b_type_height(U change)
