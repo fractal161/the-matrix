@@ -132,25 +132,9 @@ fn game_action.unknown_noop() U
     return PLAY_STATE_UNKNOWN_NOOP
 
 fn game_action.curtain() U
-    if curtain_row == $14
-        // wait for game over
-        if pads[0].pressed == BUTTON_START
-            return PLAY_STATE_GAME_OVER
-        return PLAY_STATE_CURTAIN
-    // only update curtain when frame counter is a multiple of 4
-    if frame_counter.a & %11 != 0
-        return PLAY_STATE_CURTAIN
-    // negative row is like a timer
-    if curtain_row < 0
-        curtain_row += 1
-        return PLAY_STATE_CURTAIN
-    // hide current piece sprite
-    active_piece_id = PIECE_ID_NONE
-    // draw curtain_row
-    for U i = 0; i < 10; i += 1
-        board_set_cell(@board, i, U(curtain_row), CURTAIN_TILE)
-    vram_row = U(curtain_row)
-    curtain_row += 1
+    // wait for game over
+    if pads[0].pressed == BUTTON_START
+        return PLAY_STATE_GAME_OVER
     return PLAY_STATE_CURTAIN
 
 // each game action returns the resulting state
