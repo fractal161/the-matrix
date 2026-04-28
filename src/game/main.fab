@@ -128,6 +128,11 @@ nmi game_nmi()
         {MMC5_SCANLINE_STATUS}($00)
     hide_oam(0)
 
+fn print_floor_tiles()
+    // start at 200 - 10 * floor, go up to 200
+    for U i = 200 - U(10 * floor); i < 200; i += 1
+        @board[i] = GAME_TILE_FLOOR
+
 mode game()
 : nmi game_nmi
 : irq subframe_poll
@@ -150,6 +155,9 @@ mode game()
     print_byte(top_entry.score_bcd.c)
     print_byte(top_entry.score_bcd.b)
     print_byte(top_entry.score_bcd.a)
+
+    print_floor_tiles()
+    vram_row = 0
 
     if game_type == GAME_TYPE_B
         // mark as b-type
@@ -177,8 +185,7 @@ mode game()
     if game_type == GAME_TYPE_B
         // TODO: init b-type playfield
     next_nesfab_mode = NESFAB_MODE_GAME
-    allegro = false
-    set_music()
+
     safe_enable_rendering()
     update_audio_and_nmi_wait()
     ppu_set_scroll(0, 0)
