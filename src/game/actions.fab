@@ -50,20 +50,21 @@ fn game_action.check_full_lines() U
     if S(piece_y) >= 2
         row = piece_y - 2
     row += line_index
-
-    if is_row_full(row) == $01
-        set_sfx(SFX_LINE_CLEAR)
-        completed_lines += 1
-        completed_rows[line_index] = row
-        // copy rows
-        for U i = 0; i < row; i += 1
-            copy_row_from_above(row - 1 - i)
-        // clear top row
-        for U i = 0; i < 10; i += 1
-            board_set_cell(@board, i, 0, GAME_TILE_EMPTY)
-        active_piece_id = PIECE_ID_NONE
-    else
-        completed_rows[line_index] = 0
+    // only check/mark completed rows above the floor
+    if row < 20 - floor
+        if is_row_full(row) == $01
+            set_sfx(SFX_LINE_CLEAR)
+            completed_lines += 1
+            completed_rows[line_index] = row
+            // copy rows
+            for U i = 0; i < row; i += 1
+                copy_row_from_above(row - 1 - i)
+            // clear top row
+            for U i = 0; i < 10; i += 1
+                board_set_cell(@board, i, 0, GAME_TILE_EMPTY)
+            active_piece_id = PIECE_ID_NONE
+        else
+            completed_rows[line_index] = 0
     line_index += 1
     if S(line_index) < $04
         return PLAY_STATE_CHECK_FULL_LINES

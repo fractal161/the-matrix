@@ -68,6 +68,21 @@ ct Fn.level_menu_change[TOTAL_SECTION_COUNT] LEVEL_MENU_CHANGE_FNS = Fn.level_me
     @(level_menu_change.drought),
 )
 
+// has to be separate from ALL_MENU_SECTIONS for compile time reasons
+ct Fn.level_menu_print[TOTAL_SECTION_COUNT] LEVEL_MENU_PRINT_FNS = Fn.level_menu_print[](
+    // a-type
+    @(level_menu_print.type),
+    @(level_menu_print.level),
+    @(level_menu_print.floor),
+    @(level_menu_print.drought),
+    // b-type
+    @(level_menu_print.type),
+    @(level_menu_print.level),
+    @(level_menu_print.b_type_height),
+    @(level_menu_print.floor),
+    @(level_menu_print.drought),
+)
+
 // EVERYTHING BELOW THIS IS MEANT TO BE AUTOGEN
 
 ct fn _menu_section_maker(U field_count, U x, U y, U x_offset) MenuSection

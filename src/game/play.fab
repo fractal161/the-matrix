@@ -113,7 +113,7 @@ fn is_position_valid() Bool
         if x >= 10 || x >= $80
             return false
         // ensure y is in range
-        if (y+2) >= 22
+        if (y+2) >= 22 - floor
             return false
         if board_get_cell(@board, x, y) != GAME_TILE_EMPTY
             return false

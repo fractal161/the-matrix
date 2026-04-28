@@ -55,12 +55,16 @@ fn render.level_menu()
         {PPUDATA}($FF)
         print_byte(get_level_menu_cursor_y())
     if level_menu_render_flags & LEVEL_MENU_RENDER_LEVEL > 0
-        level_menu_print.level()
+        // TODO: don't hardcode lmao
+        level_menu_print.level(1)
     if level_menu_render_flags & LEVEL_MENU_RENDER_FLOOR > 0
-        level_menu_print.floor()
+        // TODO: don't hardcode lmao
+        level_menu_print.floor(2)
     level_menu_render_flags = 0
 
 fn level_menu_change.type(U change)
+    // TODO: implement
+fn level_menu_print.type(U row)
     // TODO: implement
 
 
@@ -79,8 +83,8 @@ fn level_menu_change.level(U change)
             start_level = 39
     level_menu_render_flags |= LEVEL_MENU_RENDER_LEVEL
 
-fn level_menu_print.level()
-    MenuSection section = get_level_menu_section()
+fn level_menu_print.level(U row)
+    MenuSection section = ALL_MENU_SECTIONS[row]
     ppu_set_addr(section.start_ppu_addr)
     print_byte(two_digit_table[start_level])
 
@@ -105,14 +109,18 @@ fn level_menu_change.floor(U change)
         floor = 12
     level_menu_render_flags |= LEVEL_MENU_RENDER_FLOOR
 
-fn level_menu_print.floor()
-    MenuSection section = get_level_menu_section()
+fn level_menu_print.floor(U row)
+    MenuSection section = ALL_MENU_SECTIONS[row]
     ppu_set_addr(section.start_ppu_addr)
     {PPUDATA}(floor)
 
 fn level_menu_change.drought(U change)
     // TODO: implement
+fn level_menu_print.drought(U row)
+    // TODO: implement
 fn level_menu_change.b_type_height(U change)
+    // TODO: implement
+fn level_menu_print.b_type_height(U row)
     // TODO: implement
 
 fn handle_level_menu_input()
@@ -182,6 +190,9 @@ mode level_menu()
         ppu_upload_full_palette(@palette_b_level_menu)
 
     load_nt(@nt_level_menu)
+
+    level_menu_print.level(1)
+    level_menu_print.floor(2)
     fence
     safe_enable_rendering()
     while true
