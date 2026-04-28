@@ -145,30 +145,24 @@ fn handle_level_menu_input()
         // goto mode type_menu()
         // : preserves
 
-fn stage_level_menu_cursor(U x, U y)
-    for U i = 0; i < 2; i += 1
-        for U j = 0; j < 2; j += 1
-            oam_index = push_oam(oam_index, x + (i << 3), y + (j << 3), MENU_TILE_CURSOR, ATTR_PRIORITY | %00)
-
-// TODO: would like to generate these using coordinates
-ct U[6] height_cursor_x = U[]($9C,$AC,$BC,$9C,$AC,$BC)
-ct U[6] height_cursor_y = U[]($53,$53,$53,$63,$63,$63)
-
-ct U[10] level_cursor_x = U[]($34,$44,$54,$64,$74,$34,$44,$54,$64,$74)
-ct U[10] level_cursor_y = U[]($53,$53,$53,$53,$53,$63,$63,$63,$63,$63)
+fn stage_level_menu_cursor()
+    U cursor_x = get_level_menu_cursor_x()
+    U cursor_y = get_level_menu_cursor_y()
+    MenuSection section = get_level_menu_section()
+    U spr_x = section.start_x + (cursor_x << 3)
+    U spr_y_top = section.start_y - 11
+    U spr_y_bot = section.start_y + 8
+    if cursor_timer >= CURSOR_TIMEOUT
+        spr_y_top -= 1
+        spr_y_bot += 1
+    cursor_timer += 1
+    if cursor_timer == 2 * CURSOR_TIMEOUT
+        cursor_timer = 0
+    oam_index = push_oam(oam_index, spr_x, spr_y_top, MENU_TILE_CARET, ATTR_V_FLIP | %00)
+    oam_index = push_oam(oam_index, spr_x, spr_y_bot, MENU_TILE_CARET, %00)
 
 fn stage_level_menu_sprites()
-    Bool flicker_on = (frame_counter.a & MENU_CURSOR_MASK()) != 0
-    if !(flicker_on && is_selecting_height) && game_type == GAME_TYPE_B
-        // stage height cursor
-        U sprite_x = height_cursor_x[start_height]
-        U sprite_y = height_cursor_y[start_height]
-        stage_level_menu_cursor(sprite_x, sprite_y)
-    if !(flicker_on && !is_selecting_height)
-        // stage level cursor
-        U sprite_x = level_cursor_x[start_level]
-        U sprite_y = level_cursor_y[start_level]
-        stage_level_menu_cursor(sprite_x, sprite_y)
+    stage_level_menu_cursor()
     hide_oam(oam_index)
 
 mode level_menu()

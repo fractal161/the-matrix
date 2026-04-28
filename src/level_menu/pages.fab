@@ -141,19 +141,23 @@ ct fn _menu_cursor_y_table() U[MENU_CURSOR_TOTAL]
 ct U[MENU_CURSOR_TOTAL] MENU_CURSOR_Y_TABLE = _menu_cursor_y_table()
 
 fn get_level_menu_cursor_x() U
+: +inline
     U offset = MENU_CURSOR_OFFSETS[game_type]
     return MENU_CURSOR_X_TABLE[offset + cursor_idx]
 
 fn get_level_menu_cursor_y() U
+: +inline
     U offset = MENU_CURSOR_OFFSETS[game_type]
     return MENU_CURSOR_Y_TABLE[offset + cursor_idx]
 
 fn get_level_menu_section() MenuSection
+: +inline
     U offset = MENU_SECTION_OFFSETS[game_type]
     U cursor_y = get_level_menu_cursor_y()
     return ALL_MENU_SECTIONS[offset + cursor_y]
 
 fn get_level_menu_change_fn() Fn.level_menu_change
+: +inline
     U offset = MENU_SECTION_OFFSETS[game_type]
     U cursor_y = get_level_menu_cursor_y()
     return LEVEL_MENU_CHANGE_FNS[offset + cursor_y]
