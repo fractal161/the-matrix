@@ -1,0 +1,46 @@
+// packed_info consists of "length" (first 5 bits) and "tap count" (last 3 bits)
+// $F0 is used to represent an uninitialized value, since a 1-tap must have
+// a length of 0.
+// hz can be calculated using 60*length / taps-1
+struct TapInfo
+    U packed_info
+    U start_index
+ct U NULL_TAP_INFO = $F0
+ct U MAX_TAP_INFO_COUNT = 8
+
+// for each tap count, the min/max frames where they are active
+struct RangeFreq
+    U min_length
+    U max_length
+    U freq
+
+ct U[] HZ_GRADIENT = U[](
+    $10, $26, $27, $28, $29, $2A, $2C, $22, $23, $24, $14, $15, // from gym
+    $34, $33, $32, $31, $3A, $39, $38, // continuation beyond gym colors
+)
+
+// use bcd hz values to compute color
+ct U[] HZ_THRESHOLDS_BCD = U[](
+    $02, $05, $07, $10, $12, $15, $18, $20, $23, $24, $28
+)
+fn get_hz_color_bcd(U i) U
+    for U j = 0; j < len(HZ_THRESHOLDS_BCD) - 1; j += 1
+        if i <= HZ_THRESHOLDS_BCD[j]
+            return HZ_GRADIENT[j]
+    return HZ_GRADIENT[len(HZ_THRESHOLDS_BCD) - 1]
+
+vars /roll_probs
+    TapInfo[NUM_SUBFRAMES] subframe_tap_info = TapInfo[NUM_SUBFRAMES]()
+    U roll_prob_index = 0
+
+
+fn update_tap_info(U i)
+    TapInfo tap_info = subframe_tap_info[i]
+    U taps = tap_info.packed_info & %111
+    if tap_info.packed_info == $F0
+        subframe_tap_info[i].packed_info = $00
+        subframe_tap_info[i].start_index = roll_prob_index
+    else if taps != %111 && roll_prob_index < INPUT_STREAM_LENGTH
+        U tap_len = roll_prob_index - tap_info.start_index
+        subframe_tap_info[i].packed_info = tap_len << 3 | (taps + 1)
+

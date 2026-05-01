@@ -16,13 +16,21 @@ ct Int RECORDING_TIMEOUT = 64
 ct Int RECORDING_ON = 1
 ct Int RECORDING_OFF = 0
 
+// basically when we start doing negative
+ct Int NEGATIVE_INPUT_OFFSET = 5
+ct Int INPUT_STREAM_LENGTH = 20 + NEGATIVE_INPUT_OFFSET
+
 vars /hud
+    // U[0] is last frame, U[1] is two frames ago
+    U[2] previous_lr_polls = U[](0, 0)
+    U previous_ab_poll = 0
     // input delay
     // real values are 0 - 8*23=184
     // $EA if negative, $FF otherwise
     DelayDigits delay_digits
     U[NUM_DELAYS] delay_graph = U[NUM_DELAYS]($FF)
-    // minimum input length
+
+    // input lengths
     U current_space_idx = $FF
     U[NUM_SPACES] input_lengths = U[NUM_SPACES](0)
     U[NUM_SPACES] gap_lengths = U[NUM_SPACES](0)
@@ -31,15 +39,22 @@ vars /hud
 
     U recording_state = 0
     U recording_timeout = 0
-    Bool last_poll = false
+
     U tap_count = 0
+
+    U input_stream_index = 0 // how many frames we've been tracking
+    U[INPUT_STREAM_LENGTH] lr_input_stream
+    U[INPUT_STREAM_LENGTH] ab_input_stream
+
+    U subframe_render_flags = 0
 
 fn reset_hz_and_space_state()
     tap_count = 0
     current_space_idx = $FF
+    roll_prob_index = 0
 
-// updates for every poll
-fn update_hud_poll(Bool poll)
+// updates hud state for every poll
+fn update_hud_poll(Bool poll, Bool last_poll, U i)
 : +inline
     if poll
         if recording_state == RECORDING_OFF
@@ -48,6 +63,7 @@ fn update_hud_poll(Bool poll)
         if !last_poll
             current_space_idx += 1
             tap_count += 1
+            update_tap_info(current_space_idx)
         // TODO: maybe we add a limit to this later?
         if current_space_idx < NUM_SPACES
             input_lengths[current_space_idx] += 1
@@ -61,31 +77,49 @@ fn update_hud_poll(Bool poll)
             recording_timeout += 1
     // update input delay
     if poll && delay_graph[NUM_DELAYS-1] == $FF
-        delay_graph[NUM_DELAYS-1] = (input_stream_index << 3) + subframe_index
+        delay_graph[NUM_DELAYS-1] = (input_stream_index << 3) + i
         subframe_render_flags |= SUBFRAME_RENDER_DELAY
-    // update
-    last_poll = poll
 
 // reset vars, prep for next thing
-fn advance_hud_state()
+fn reset_piece_aligned_hud_state()
 : +inline
-    // reset everything
+    // previous_ab_poll and previous_lr_polls[0] were set in nmi, so we
+    // shouldn't reset here
+    previous_lr_polls[1] = 0
+    // TODO: we should make this another counter
     input_stream_index = 0
-    lr_this_frame = 0
-    lr_last_frame = 0
     for U i = 0; i < NUM_DELAYS-1; i += 1
         delay_graph[i] = delay_graph[i + 1]
     // shift delay_graph
     delay_graph[NUM_DELAYS-1] = $FF
     reset_hz_and_space_state()
+    is_first_piece = false
 
-// use lr_last_frame and input_stream_index - 1
+fn update_last_frame_polls()
+    previous_lr_polls[1] = previous_lr_polls[0]
+    previous_lr_polls[0] = lr_this_frame
+    previous_ab_poll = ab_this_frame
+
 fn update_hud_delayed()
 : +inline
+    // handle poll specific updates
+    Bool last_lr = (previous_lr_polls[1] <-< false)
+    U lr_polls = previous_lr_polls[0]
+    for U i = 0; i < NUM_SUBFRAMES; i += 1
+        U next_lr = (false >=> lr_polls)
+        update_hud_poll(next_lr, last_lr, i)
+        last_lr = next_lr
+    if input_stream_index < INPUT_STREAM_LENGTH
+        lr_input_stream[input_stream_index] = previous_lr_polls[0]
+        ab_input_stream[input_stream_index] = previous_ab_poll
+    if input_stream_index < INPUT_STREAM_LENGTH
+        input_stream_index += 1
+    update_hud_immediate()
+
+fn stage_hud_sprites()
     stage_input_stream_sprites(lr_input_stream, 79, GAME_SPRITE_PAL_LR)
     stage_input_stream_sprites(ab_input_stream, 71, GAME_SPRITE_PAL_AB)
     stage_delay_graph()
-    // 
 
 // updates for the last subframe of the frame (i.e. staging tiles)
 // use lr_this_frame and input_stream_index for up-to-date info
@@ -131,19 +165,19 @@ fn update_delay_tiles()
         // [0, 16]: red text, negative
         delay_digits.sign = $EA
         // add $E0 to everything for red text
-        delay_digits.lead = 3 - ((stat_input_delay + 7) >> 3) + $E0
+        delay_digits.lead = NEGATIVE_INPUT_OFFSET - ((stat_input_delay + 7) >> 3) + $E0
         delay_digits.dot = $EB
         delay_digits.decimal = EIGHTH_DECIMALS[(8 - stat_input_delay) & %111] + $E0E0
     else if stat_input_delay < WN_THRESHOLD
         // [17, 23]: white text, negative
         delay_digits.sign = $24
-        delay_digits.lead = 3 - ((stat_input_delay + 7) >> 3)
+        delay_digits.lead = NEGATIVE_INPUT_OFFSET - ((stat_input_delay + 7) >> 3)
         delay_digits.dot = $2A
         delay_digits.decimal = EIGHTH_DECIMALS[(8 - stat_input_delay) & %111]
     else
         // 24+: white text, nonnegative
         delay_digits.sign = $FF
-        delay_digits.lead = (stat_input_delay >> 3) - 3
+        delay_digits.lead = (stat_input_delay >> 3) - NEGATIVE_INPUT_OFFSET
         delay_digits.dot = $2A
         delay_digits.decimal = EIGHTH_DECIMALS[stat_input_delay & %111]
 
@@ -156,17 +190,20 @@ fn stage_input_stream_sprites(U[INPUT_STREAM_LENGTH] input_stream,
     set_breakpoint($6000)
     for U i = 0; i < input_stream_index; i += 1
         // get tile type
-        U sprite_y = 23 + (i << 3)
+        U sprite_y = 7 + (i << 3)
         U tile = input_stream[i]
+        U attrs = pal
+        if i > 1
+            attrs |= ATTR_PRIORITY
         if tile > 0
             // complicated logic
             while !(tile >>= 1)
                 sprite_y += 1
-            oam_index = push_oam(oam_index, sprite_x, sprite_y,
-                tile, pal | ATTR_PRIORITY)
+            oam_index = push_oam(oam_index, sprite_x, sprite_y, tile, attrs)
     set_breakpoint($6000)
 
 fn stage_delay_graph()
+    // TODO: most recent entry should have a larger sprite
     for U i = 0; i < NUM_DELAYS; i += 1
         if delay_graph[i] == $FF
             continue

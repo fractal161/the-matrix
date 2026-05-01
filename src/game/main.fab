@@ -120,9 +120,16 @@ fn game_logic()
 
 nmi game_nmi()
     main_nmi_fn()
-    lr_last_frame = lr_this_frame
     // handle subframe polling
-    if play_state == PLAY_STATE_GAME || (play_state > PLAY_STATE_UPDATE_STATS && vram_row >= $0C)
+    if play_state == PLAY_STATE_LOCK_PIECE && subframe_state == SUBFRAME_STATE_ON
+        subframe_state = SUBFRAME_STATE_SHUTDOWN
+    if play_state > PLAY_STATE_UPDATE_STATS && vram_row == $08
+        subframe_state = SUBFRAME_STATE_STARTUP
+
+    if (subframe_state == SUBFRAME_STATE_ON
+        || subframe_state == SUBFRAME_STATE_STARTUP
+    )
+        update_last_frame_polls()
         handle_subframe_nmi()
     else
         {MMC5_SCANLINE_STATUS}($00)
@@ -192,6 +199,7 @@ mode game()
     // enable irq
     irq true
     {MMC5_SCANLINE_STATUS}($80)
+    subframe_state = SUBFRAME_STATE_STARTUP
     // spinlock
     while true
         nmi
@@ -199,7 +207,15 @@ mode game()
             handle_pause()
         else
             game_logic()
-        update_hud_delayed()
+            if subframe_state == SUBFRAME_STATE_STARTUP
+                reset_piece_aligned_hud_state()
+                subframe_state = SUBFRAME_STATE_ON
+            if subframe_state == SUBFRAME_STATE_ON
+                update_hud_delayed()
+            if subframe_state == SUBFRAME_STATE_SHUTDOWN
+                update_hud_delayed()
+                subframe_state = SUBFRAME_STATE_OFF
+            stage_hud_sprites()
         // handle jumps for gameover
         if next_nesfab_mode == NESFAB_MODE_LEVEL_MENU
             update_audio_and_nmi_wait()

@@ -1,9 +1,15 @@
 ct Int NUM_SUBFRAMES = 8
-// basically when we start doing negative
-ct Int NEGATIVE_INPUT_OFFSET = 3
-ct Int INPUT_STREAM_LENGTH = 20 + NEGATIVE_INPUT_OFFSET
 // last entry is nmi poll, experimentally tested
 ct U[NUM_SUBFRAMES] SCANLINES = U[](12, 45, 77, 110, 143, 175, 208, 241)
+
+// don't poll or update hud
+ct U SUBFRAME_STATE_OFF = 0
+// poll, reset hud state as needed
+ct U SUBFRAME_STATE_STARTUP = 1
+// poll and update hud
+ct U SUBFRAME_STATE_ON = 2
+// don't poll, finish update hud before turning off
+ct U SUBFRAME_STATE_SHUTDOWN = 3
 
 vars /game
     // normal pad only updates once a frame to preserve game logic
@@ -12,16 +18,12 @@ vars /game
     // lsb is start of frame, to make it easy to look up nmi bits
     // since we're not cleaning these up (expensive), we have to use
     // input_stream_index for all calculations
-    U[INPUT_STREAM_LENGTH] lr_input_stream
-    U[INPUT_STREAM_LENGTH] ab_input_stream
     // for doing diffs
-    U lr_this_frame
-    U lr_last_frame
-    // TODO: we clean ALLLL of this up during either lock_piece or
-    // check_for_completed_rows
-    U input_stream_index = 0 // how many frames we've been tracking
+    Bool is_first_piece = true
+    U subframe_state = SUBFRAME_STATE_OFF
     U subframe_index = 0 // 0-7
-    U subframe_render_flags = 0
+    U lr_this_frame = 0
+    U ab_this_frame = 0
 
 
 fn handle_subframe_nmi()
@@ -46,26 +48,16 @@ irq subframe_poll()
     handle_subframe_poll()
 
 fn handle_subframe_poll()
+    // TODO: make it so this only updates state
     Bool is_lr_pressed = subframe_pad.held & (BUTTON_LEFT | BUTTON_RIGHT)
+    Bool is_ab_pressed = subframe_pad.held & (BUTTON_A | BUTTON_B)
     // update polls this frame
     is_lr_pressed >=> lr_this_frame
-    // update input stream
-    if input_stream_index < INPUT_STREAM_LENGTH
-        Bool is_ab_pressed = subframe_pad.held & (BUTTON_A | BUTTON_B)
-        // "assign by rotate right" aka the coolest operation ever
-        is_ab_pressed >=> ab_input_stream[input_stream_index]
-        // then left/right
-        is_lr_pressed >=> lr_input_stream[input_stream_index]
-        subframe_render_flags |= SUBFRAME_RENDER_INPUT
-    update_hud_poll(is_lr_pressed)
+    is_ab_pressed >=> ab_this_frame
     // update counters
     subframe_index += 1
     if subframe_index == NUM_SUBFRAMES
         subframe_index = 0
-        fence
-        update_hud_immediate()
-        if input_stream_index < INPUT_STREAM_LENGTH
-            input_stream_index += 1
 
 asm fn cli()
 : employs
