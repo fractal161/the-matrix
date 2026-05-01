@@ -17,7 +17,7 @@ ct Int RECORDING_ON = 1
 ct Int RECORDING_OFF = 0
 
 // basically when we start doing negative
-ct Int NEGATIVE_INPUT_OFFSET = 3
+ct Int NEGATIVE_INPUT_OFFSET = 5
 ct Int INPUT_STREAM_LENGTH = 20 + NEGATIVE_INPUT_OFFSET
 
 vars /hud
@@ -191,7 +191,7 @@ fn stage_input_stream_sprites(U[INPUT_STREAM_LENGTH] input_stream,
         U sprite_y = INPUT_STREAM_START_Y + (i << 3)
         U tile = input_stream[i]
         U attrs = pal
-        if i > 1
+        if sprite_y >= 16
             attrs |= ATTR_PRIORITY
         if tile > 0
             // complicated logic
@@ -200,13 +200,14 @@ fn stage_input_stream_sprites(U[INPUT_STREAM_LENGTH] input_stream,
             oam_index = push_oam(oam_index, sprite_x, sprite_y, tile, attrs)
     set_breakpoint($6000)
 
+ct U DELAY_GRAPH_START = 136-8*NEGATIVE_INPUT_OFFSET
 fn stage_delay_graph()
     // TODO: most recent entry should have a larger sprite
     for U i = 0; i < NUM_DELAYS; i += 1
         if delay_graph[i] == $FF
             continue
-        U sprite_x = delay_graph[i] + 112
-        if delay_graph[i] > 240-112
+        U sprite_x = delay_graph[i] + DELAY_GRAPH_START
+        if delay_graph[i] > 240-DELAY_GRAPH_START
             sprite_x = 240
         U sprite_y = 215
         U tile = $83

@@ -118,13 +118,15 @@ fn game_logic()
         render_mode = RENDER_MENU_SCREEN
     update_audio()
 
+ct U SUBFRAME_VRAM_ROW = 24-4*NEGATIVE_INPUT_OFFSET
+
 nmi game_nmi()
     main_nmi_fn()
     // handle subframe polling
     if (play_state == PLAY_STATE_LOCK_PIECE
         && subframe_state == SUBFRAME_STATE_ON)
         subframe_state = SUBFRAME_STATE_SHUTDOWN
-    if play_state > PLAY_STATE_UPDATE_STATS && vram_row == $0C
+    if play_state >= PLAY_STATE_UPDATE_STATS && vram_row == SUBFRAME_VRAM_ROW
         subframe_state = SUBFRAME_STATE_STARTUP
 
     update_last_frame_polls()
