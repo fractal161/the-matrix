@@ -121,18 +121,17 @@ fn game_logic()
 nmi game_nmi()
     main_nmi_fn()
     // handle subframe polling
-    if play_state == PLAY_STATE_LOCK_PIECE && subframe_state == SUBFRAME_STATE_ON
+    if (play_state == PLAY_STATE_LOCK_PIECE
+        && subframe_state == SUBFRAME_STATE_ON)
         subframe_state = SUBFRAME_STATE_SHUTDOWN
-    if play_state > PLAY_STATE_UPDATE_STATS && vram_row == $08
+    if play_state > PLAY_STATE_UPDATE_STATS && vram_row == $0C
         subframe_state = SUBFRAME_STATE_STARTUP
 
+    update_last_frame_polls()
+    fence
     if (subframe_state == SUBFRAME_STATE_ON
-        || subframe_state == SUBFRAME_STATE_STARTUP
-    )
-        update_last_frame_polls()
+        || subframe_state == SUBFRAME_STATE_STARTUP)
         handle_subframe_nmi()
-    else
-        {MMC5_SCANLINE_STATUS}($00)
     hide_oam(0)
 
 fn print_floor_tiles()
@@ -210,9 +209,9 @@ mode game()
             if subframe_state == SUBFRAME_STATE_STARTUP
                 reset_piece_aligned_hud_state()
                 subframe_state = SUBFRAME_STATE_ON
-            if subframe_state == SUBFRAME_STATE_ON
+            else if subframe_state == SUBFRAME_STATE_ON
                 update_hud_delayed()
-            if subframe_state == SUBFRAME_STATE_SHUTDOWN
+            else if subframe_state == SUBFRAME_STATE_SHUTDOWN
                 update_hud_delayed()
                 subframe_state = SUBFRAME_STATE_OFF
             stage_hud_sprites()
