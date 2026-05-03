@@ -116,8 +116,10 @@ fn game_action.get_next_piece() U
     if S(vram_row) < $20
         return PLAY_STATE_GET_NEXT_PIECE
     gravity_timer = 0
-    piece_y = 0
     piece_x = 5
+    piece_y = 0
+    old_piece_x = 5
+    old_piece_y = 0
     // TODO: there's a lookup table that i don't think is necessary??
     active_piece_id = next_piece_id
     increment_piece_count(active_piece_id)
@@ -152,8 +154,12 @@ ct Fn.game_action[10] game_actions = Fn.game_action[](
 )
 
 fn update_player()
+    old_piece_x = piece_x
+    old_piece_y = piece_y
+    old_active_piece_id = active_piece_id
     play_state = game_actions[play_state]()
-    stage_active_piece_sprites()
+    // stage_active_piece_sprites()
+    compute_active_piece_tiles()
     // stage_next_piece_sprites()
 
 // top left coordinate is 96, 47 ($60, $2F) (12, 6 in tiles)
@@ -169,6 +175,59 @@ fn stage_active_piece_sprites()
         U sprite_y = 47 + (y << 3)
         oam_index = push_oam(oam_index, sprite_x, sprite_y, tile.tile_type,
             GAME_SPRITE_PAL_PIECE)
+
+struct PpuWrite
+    UU addr
+    U tile
+
+vars /game
+    U old_piece_x = 5
+    U old_piece_y = 0
+    U old_active_piece_id
+    PpuWrite[4] old_active_piece_tiles
+    PpuWrite[4] new_active_piece_tiles
+
+fn compute_active_piece_tiles()
+    if active_piece_id == PIECE_ID_NONE
+        // set all addresses to $2000 to skip
+        for U i = 0; i < 4; i += 1
+            old_active_piece_tiles[i].addr = $2000
+            new_active_piece_tiles[i].addr = $2000
+        return
+    PieceTileset old_tileset = get_piece_tileset(old_active_piece_id)
+    // PART 1: clear old tiles
+    for U i = 0; i < 4; i += 1
+        PieceTile tile = old_tileset.tiles[i]
+        U x = old_piece_x + tile.x_offset
+        U y = old_piece_y + tile.y_offset
+        if y >= $80
+           old_active_piece_tiles[i].addr = $2000
+        else
+            old_active_piece_tiles[i].addr = ppu_addr_from_coords(12+x, 6+y, 0)
+        old_active_piece_tiles[i].tile = $FF
+    // PART 2: write new tiles
+    PieceTileset new_tileset = get_piece_tileset(active_piece_id)
+    for U i = 0; i < 4; i += 1
+        PieceTile tile = new_tileset.tiles[i]
+        U x = piece_x + tile.x_offset
+        U y = piece_y + tile.y_offset
+        if y >= $80
+            new_active_piece_tiles[i].addr = $2000
+        else
+            new_active_piece_tiles[i].addr = ppu_addr_from_coords(12+x, 6+y, 0)
+        new_active_piece_tiles[i].tile = tile.tile_type
+
+fn write_active_piece_tiles()
+    // clear out olds
+    for U i = 0; i < 4; i += 1
+        if old_active_piece_tiles[i].addr > $2000
+            ppu_set_addr(old_active_piece_tiles[i].addr)
+            {PPUDATA}(old_active_piece_tiles[i].tile)
+    // write in news
+    for U i = 0; i < 4; i += 1
+        if new_active_piece_tiles[i].addr > $2000
+            ppu_set_addr(new_active_piece_tiles[i].addr)
+            {PPUDATA}(new_active_piece_tiles[i].tile)
 
 ct U[7] NEXT_PIECE_X = U[](
     204, 204, 204, 208, 204, 204, 208

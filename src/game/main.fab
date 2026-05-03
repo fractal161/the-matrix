@@ -186,6 +186,8 @@ mode game()
     increment_piece_count(active_piece_id)
     advance_prng()
     next_piece_id = get_next_piece_id()
+    // need to do this
+    compute_active_piece_tiles()
 
     if game_type == GAME_TYPE_B
         lines_bcd = $25
@@ -193,6 +195,8 @@ mode game()
     if game_type == GAME_TYPE_B
         // TODO: init b-type playfield
     next_nesfab_mode = NESFAB_MODE_GAME
+
+    fence
 
     safe_enable_rendering()
     update_audio_and_nmi_wait()
