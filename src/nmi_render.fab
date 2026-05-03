@@ -41,6 +41,8 @@ fn render.game()
         vram_row = 0
     else
         for U i = 0; i < 4; i += 1
+            if S(vram_row) >= $15
+                break
             copy_board_row_to_vram()
     handle_game_render()
     handle_subframe_render()
@@ -70,6 +72,8 @@ fn handle_subframe_render()
 
 fn handle_game_render()
 : +inline
+    if game_render_flags == 0
+        return
     if game_render_flags & GAME_RENDER_LINES > 0
         ppu_set_addr(ppu_addr_from_coords_ct(19, 3, 0))
         {PPUDATA}(lines_bcd.b)
@@ -137,8 +141,6 @@ asm fn copy_row_raw(U row_offset)
     rts
 
 fn copy_board_row_to_vram()
-    if S(vram_row) >= $15
-        return
     ppu_set_addr(VRAM_ROW_TABLE()[6+vram_row])
     U row_offset = U(10 * vram_row)
     copy_row_raw(row_offset)

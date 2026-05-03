@@ -114,7 +114,7 @@ fn update_roll_prob_digits()
 
 fn stage_min_hz_sprites(U min_hz_bcd, U i)
     U sprite_x = 24
-    U sprite_y = 167 + (i << 4)
+    U sprite_y = 39 + (i << 4)
     U first_digit = $F0 + (min_hz_bcd >> 4)
     oam_index = push_oam(oam_index, sprite_x, sprite_y, first_digit, 3)
     U second_digit = $F0 + (min_hz_bcd & %1111)

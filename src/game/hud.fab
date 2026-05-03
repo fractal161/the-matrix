@@ -92,7 +92,6 @@ fn reset_piece_aligned_hud_state()
         delay_graph[i] = delay_graph[i + 1]
     // shift delay_graph
     delay_graph[NUM_DELAYS-1] = $FF
-    reset_hz_and_space_state()
     is_first_piece = false
 
 fn update_last_frame_polls()
