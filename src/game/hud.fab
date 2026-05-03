@@ -52,9 +52,11 @@ fn reset_hz_and_space_state()
     tap_count = 0
     current_space_idx = $FF
     roll_prob_index = 0
+    for U i = 0; i < NUM_SUBFRAMES; i += 1
+        subframe_tap_info[i] = TapInfo(NULL_TAP_INFO, 0)
 
 // updates hud state for every poll
-fn update_hud_poll(Bool poll, Bool last_poll, U i)
+fn update_hud_poll(Bool poll, Bool last_poll, Bool last_frame_poll, U i)
 : +inline
     if poll
         if recording_state == RECORDING_OFF
@@ -63,11 +65,12 @@ fn update_hud_poll(Bool poll, Bool last_poll, U i)
         if !last_poll
             current_space_idx += 1
             tap_count += 1
-            update_tap_info(current_space_idx)
         // TODO: maybe we add a limit to this later?
         if current_space_idx < NUM_SPACES
             input_lengths[current_space_idx] += 1
         recording_timeout = 0
+        if !last_frame_poll
+            update_roll_prob_tap_info(i)
     else
         if recording_timeout == RECORDING_TIMEOUT
             recording_state = RECORDING_OFF
@@ -101,35 +104,33 @@ fn update_hud_delayed()
 : +inline
     // handle poll specific updates
     Bool last_lr = (previous_lr_polls[1] <-< false)
+    U last_frame_lr_polls = previous_lr_polls[1]
     U lr_polls = previous_lr_polls[0]
     for U i = 0; i < NUM_SUBFRAMES; i += 1
         U next_lr = (false >=> lr_polls)
-        update_hud_poll(next_lr, last_lr, i)
+        U last_frame_lr = (false >=> last_frame_lr_polls)
+        update_hud_poll(next_lr, last_lr, last_frame_lr, i)
         last_lr = next_lr
+    // handle end of frame processing
     if input_stream_index < INPUT_STREAM_LENGTH
         lr_input_stream[input_stream_index] = previous_lr_polls[0]
         ab_input_stream[input_stream_index] = previous_ab_poll
     if input_stream_index < INPUT_STREAM_LENGTH
         input_stream_index += 1
-    update_hud_immediate()
+    roll_prob_index += 1
+    update_delay_tiles()
+    // handle min space
+    update_min_space_tiles()
 
 fn stage_hud_sprites()
     stage_input_stream_sprites(lr_input_stream, 79, GAME_SPRITE_PAL_LR)
     stage_input_stream_sprites(ab_input_stream, 71, GAME_SPRITE_PAL_AB)
     stage_delay_graph()
-
-// updates for the last subframe of the frame (i.e. staging tiles)
-// use lr_this_frame and input_stream_index for up-to-date info
-// subframe_index will be zero by this point
-fn update_hud_immediate()
-: +inline
-    update_delay_tiles()
-    // handle min space
-    update_min_space_tiles()
+    update_roll_prob_digits()
 
 // UUs for laziness
-ct UU[8] EIGHTH_DECIMALS = UU[]($0000, $0103, $0205, $0308,
-    $0500, $0603, $0705, $0808)
+ct UU[9] EIGHTH_DECIMALS = UU[]($0000, $0103, $0205, $0308,
+    $0500, $0603, $0705, $0808, $0A00)
 
 fn update_min_space_tiles()
 : +inline
