@@ -34,8 +34,7 @@ vars /roll_probs
     TapInfo[NUM_SUBFRAMES] subframe_tap_info = TapInfo[NUM_SUBFRAMES]()
     RangeFreq[RANGE_FREQ_COUNT] range_freqs = RangeFreq[RANGE_FREQ_COUNT]()
     U roll_prob_index = 0
-    U[ROLL_PROB_ROWS] roll_prob_tap_counts
-    U[ROLL_PROB_ROWS] roll_prob_tap_freqs
+    U[6 * ROLL_PROB_ROWS] roll_prob_tap_rows
     U[ROLL_PROB_ROWS * 2] roll_prob_colors
     U eff_hz_color
     U eff_hz_taps
@@ -107,8 +106,8 @@ fn update_roll_prob_digits()
         if max_freq == 0
             break
         taken_freqs |= max_flag
-        roll_prob_tap_counts[i] = max_index
-        roll_prob_tap_freqs[i] = max_freq
+        // update the "tap row"
+        update_roll_prob_tap_rows(i, max_index, max_freq)
         // at this point max_index points to the correct row
         RangeFreq max_range_freq = range_freqs[max_index]
         // min hz is staged as sprites
@@ -121,11 +120,43 @@ fn update_roll_prob_digits()
         roll_prob_colors[i+ROLL_PROB_ROWS] = get_hz_color_bcd(min_hz_bcd)
         i += 1
     while i < ROLL_PROB_ROWS
-        roll_prob_tap_counts[i] = $FF
-        roll_prob_tap_freqs[i] = $FF
+        for U j = TIMES_SIX_TABLE[i]; j < U(6 * ROLL_PROB_ROWS); j += 1
+            roll_prob_tap_rows[j] = GAME_TILE_HIDDEN
         i += 1
     subframe_render_flags |= SUBFRAME_RENDER_HZRNG
 
+ct U[5] TIMES_SIX_TABLE = U[](0, 6, 12, 18, 24)
+
+fn update_roll_prob_tap_rows(U i, U taps, U freq)
+    TapInfo eff_tap_info = subframe_tap_info[0]
+    U eff_taps = (eff_tap_info.packed_info & %111) + 1
+    Bool is_eff = eff_taps == taps
+    // if row
+    U base_offset = TIMES_SIX_TABLE[i]
+    U j = 0
+    if is_eff
+        roll_prob_tap_rows[base_offset + j] = $E0 + taps
+    else
+        roll_prob_tap_rows[base_offset + j] = taps
+    j += 1
+    roll_prob_tap_rows[base_offset + j] = GAME_TILE_HIDDEN
+    j += 1
+    U empty_tile_count = (8 - freq) >> 1
+    while j < 2 + empty_tile_count
+        roll_prob_tap_rows[base_offset + j] = GAME_TILE_HIDDEN
+        j += 1
+    if j < 6 && freq & %1
+        U tile = GAME_TILE_ODD_COUNT
+        if is_eff
+            tile += 2
+        roll_prob_tap_rows[base_offset + j] = tile
+        j += 1
+    while j < 6
+        U tile = GAME_TILE_EVEN_COUNT
+        if is_eff
+            tile += 2
+        roll_prob_tap_rows[base_offset + j] = tile
+        j += 1
 
 fn stage_hz_sprites(U hz_bcd, U i, U sprite_x, U pal)
     U sprite_y = 39 + (i << 4)

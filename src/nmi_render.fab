@@ -75,21 +75,12 @@ fn handle_subframe_render()
         {PPUDATA}(delay_digits.decimal.b)
         {PPUDATA}(delay_digits.decimal.a)
     if subframe_render_flags & SUBFRAME_RENDER_HZRNG > 0
+        U j = 0
         for U i = 0; i < ROLL_PROB_ROWS; i += 1
         : +unroll
             ppu_set_addr($2082 + UU(i << 6))
-            {PPUDATA}(roll_prob_tap_counts[i])
-            {PPUDATA}(GAME_TILE_HIDDEN)
-            U j = 0
-            U empty_tile_count = (8 - roll_prob_tap_freqs[i]) >> 1
-            while j < empty_tile_count
-                {PPUDATA}(GAME_TILE_HIDDEN)
-                j += 1
-            if j < 4 && roll_prob_tap_freqs[i] & %1
-                {PPUDATA}(GAME_TILE_ODD_COUNT)
-                j += 1
-            while j < 4
-                {PPUDATA}(GAME_TILE_EVEN_COUNT)
+            for U k = 0; k < 6; k += 1
+                {PPUDATA}(roll_prob_tap_rows[j])
                 j += 1
         // set palettes for hz sprites
         ppu_set_addr($2182)
