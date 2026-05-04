@@ -16,8 +16,6 @@ vars /game
     Pad subframe_pad
 
     // lsb is start of frame, to make it easy to look up nmi bits
-    // since we're not cleaning these up (expensive), we have to use
-    // input_stream_index for all calculations
     // for doing diffs
     Bool is_first_piece = true
     U subframe_state = SUBFRAME_STATE_OFF

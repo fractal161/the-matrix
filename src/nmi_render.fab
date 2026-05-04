@@ -36,6 +36,7 @@ fn update_line_clear_animation()
 
 // TODO: optimize this to oblivion
 fn render.game()
+    Bool vram_copy = false
     if play_state == PLAY_STATE_WAIT_FOR_LINE_CLEAR_ANIM
         update_line_clear_animation()
         vram_row = 0
@@ -44,8 +45,10 @@ fn render.game()
             if S(vram_row) >= $15
                 break
             copy_board_row_to_vram()
+            vram_copy = true
     handle_game_render()
-    handle_subframe_render()
+    if !vram_copy
+        handle_subframe_render()
     // tetris flash
     ppu_set_addr($3F0E)
     U flash_color = $00

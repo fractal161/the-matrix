@@ -20,6 +20,12 @@ ct Int RECORDING_OFF = 0
 ct Int NEGATIVE_INPUT_OFFSET = 5
 ct Int INPUT_STREAM_LENGTH = 20 + NEGATIVE_INPUT_OFFSET
 
+ct Int INPUT_STREAM_STATE_WAITING = 0
+ct Int INPUT_STREAM_STATE_INIT = 1
+ct Int INPUT_STREAM_STATE_ACTIVE = 2
+ct Int INPUT_STREAM_STATE_FIRST_PIECE = 3
+ct Int INPUT_STREAM_STATE_CURTAIN = 4
+
 vars /hud
     // U[0] is last frame, U[1] is two frames ago
     U[2] previous_lr_polls = U[](0, 0)
@@ -42,7 +48,10 @@ vars /hud
 
     U tap_count = 0
 
+    U input_stream_state = INPUT_STREAM_STATE_WAITING
     U input_stream_index = 0 // how many frames we've been tracking
+    U subframe_active_index = 0 // how many frames we've been tracking
+
     U[INPUT_STREAM_LENGTH] lr_input_stream
     U[INPUT_STREAM_LENGTH] ab_input_stream
 
@@ -80,14 +89,16 @@ fn update_hud_poll(Bool poll, Bool last_poll, Bool last_frame_poll, U i)
             recording_timeout += 1
     // update input delay
     if poll && delay_graph[NUM_DELAYS-1] == $FF
-        delay_graph[NUM_DELAYS-1] = (input_stream_index << 3) + i
+        delay_graph[NUM_DELAYS-1] = (subframe_active_index << 3) + i
         subframe_render_flags |= SUBFRAME_RENDER_DELAY
+        if input_stream_state == INPUT_STREAM_STATE_WAITING
+            input_stream_state = INPUT_STREAM_STATE_INIT
 
 // reset vars, prep for next thing
 fn reset_piece_aligned_hud_state()
 : +inline
-    // TODO: we should make this another counter
-    input_stream_index = 0
+    subframe_active_index = 0
+    input_stream_state = INPUT_STREAM_STATE_WAITING
     for U i = 0; i < NUM_DELAYS-1; i += 1
         delay_graph[i] = delay_graph[i + 1]
     // shift delay_graph
@@ -112,15 +123,31 @@ fn update_hud_delayed()
         update_hud_poll(next_lr, last_lr, last_frame_lr, i)
         last_lr = next_lr
     // handle end of frame processing
-    if input_stream_index < INPUT_STREAM_LENGTH
-        lr_input_stream[input_stream_index] = previous_lr_polls[0]
-        ab_input_stream[input_stream_index] = previous_ab_poll
-    if input_stream_index < INPUT_STREAM_LENGTH
-        input_stream_index += 1
+    update_input_streams()
+    subframe_active_index += 1
     roll_prob_index += 1
+    // prep tiles as needed
     update_delay_tiles()
     // handle min space
     update_min_space_tiles()
+
+fn update_input_streams()
+    if subframe_active_index >= INPUT_STREAM_LENGTH
+        return
+    // case 1: no input yet this piece, then we return
+    if input_stream_state == INPUT_STREAM_STATE_WAITING
+        return
+    // case 2: first input on this frame, then we set everything before to zero
+    // and then set thi
+    if input_stream_state == INPUT_STREAM_STATE_INIT
+        for U i = 0; i < INPUT_STREAM_LENGTH; i += 1
+            lr_input_stream[i] = 0
+            ab_input_stream[i] = 0
+        input_stream_state = INPUT_STREAM_STATE_ACTIVE
+    // case 3: after first input, we update normally
+    lr_input_stream[subframe_active_index] = previous_lr_polls[0]
+    ab_input_stream[subframe_active_index] = previous_ab_poll
+    input_stream_index = subframe_active_index + 1
 
 fn stage_hud_sprites()
     stage_input_stream_sprites(lr_input_stream, 79, GAME_SPRITE_PAL_LR)
