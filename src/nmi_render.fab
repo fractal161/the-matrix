@@ -68,6 +68,21 @@ fn handle_subframe_render()
         {PPUDATA}(delay_digits.dot)
         {PPUDATA}(delay_digits.decimal.b)
         {PPUDATA}(delay_digits.decimal.a)
+    if subframe_render_flags & SUBFRAME_RENDER_HZRNG > 0
+        for U i = 0; i < ROLL_PROB_ROWS; i += 1
+        : +unroll
+            ppu_set_addr($2082 + UU(i << 6))
+            {PPUDATA}(roll_prob_tap_counts[i])
+        // set palettes for hz sprites
+        ppu_set_addr($3F18)
+        {PPUDATA}($0F)
+        {PPUDATA}(roll_prob_colors[0])
+        {PPUDATA}(roll_prob_colors[1])
+        {PPUDATA}(roll_prob_colors[2])
+        {PPUDATA}($0F)
+        {PPUDATA}(roll_prob_colors[3])
+        {PPUDATA}(roll_prob_colors[4])
+        {PPUDATA}(roll_prob_colors[5])
     subframe_render_flags = 0
 
 fn handle_game_render()
@@ -107,10 +122,6 @@ fn update_game_palette()
     ppu_set_addr($3F08)
     for U i = 0; i < 4; i += 1
         {PPUDATA}(legacy_level_color_table[(legacy_level_mod10 << 2) + i])
-    // change sprite colors
-    ppu_set_addr($3F18)
-    for U i = 0; i < 4; i += 1
-        {PPUDATA}(legacy_level_color_table[(legacy_level_mod10 << 2) + i])
 
 ct fn VRAM_ROW_TABLE() UU[$20]
     UU[$20] table
@@ -144,9 +155,15 @@ asm fn copy_row_raw(U row_offset)
     sty PPUDATA
     rts
 
+ct fn TIMES_TEN_TABLE() U[26]
+    U[26] table
+    for U i = 0; i < 26; i += 1
+        table[i] = U(10*i)
+    return table
+
 fn copy_board_row_to_vram()
     ppu_set_addr(VRAM_ROW_TABLE()[6+vram_row])
-    U row_offset = U(10 * vram_row)
+    U row_offset = TIMES_TEN_TABLE()[vram_row]
     copy_row_raw(row_offset)
     // this is nicer but slower
     // for U i = 0; i < 10; i += 1

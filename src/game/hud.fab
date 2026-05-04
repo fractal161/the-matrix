@@ -93,6 +93,7 @@ fn reset_piece_aligned_hud_state()
     // shift delay_graph
     delay_graph[NUM_DELAYS-1] = $FF
     is_first_piece = false
+    recording_state = RECORDING_OFF
 
 fn update_last_frame_polls()
     previous_lr_polls[1] = previous_lr_polls[0]

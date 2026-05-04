@@ -24,9 +24,9 @@ ct U[] HZ_GRADIENT = U[](
 ct U[] HZ_THRESHOLDS_BCD = U[](
     $02, $05, $07, $10, $12, $15, $18, $20, $23, $24, $28
 )
-fn get_hz_color_bcd(U i) U
+fn get_hz_color_bcd(U hz_bcd) U
     for U j = 0; j < len(HZ_THRESHOLDS_BCD) - 1; j += 1
-        if i <= HZ_THRESHOLDS_BCD[j]
+        if hz_bcd <= HZ_THRESHOLDS_BCD[j]
             return HZ_GRADIENT[j]
     return HZ_GRADIENT[len(HZ_THRESHOLDS_BCD) - 1]
 
@@ -34,7 +34,9 @@ vars /roll_probs
     TapInfo[NUM_SUBFRAMES] subframe_tap_info = TapInfo[NUM_SUBFRAMES]()
     RangeFreq[RANGE_FREQ_COUNT] range_freqs = RangeFreq[RANGE_FREQ_COUNT]()
     U roll_prob_index = 0
-
+    U[ROLL_PROB_ROWS] roll_prob_tap_counts
+    U[ROLL_PROB_ROWS] roll_prob_tap_freqs
+    U[ROLL_PROB_ROWS * 2] roll_prob_colors
 
 fn update_roll_prob_tap_info(U i)
     TapInfo tap_info = subframe_tap_info[i]
@@ -82,9 +84,9 @@ fn update_roll_prob_digits()
     update_roll_prob_range_freqs()
     // bitflag
     U taken_freqs = $00
-    U i = 0 // represents two times the total row, to simplify some calculations
+    U i = 0
     // iterate through freq list, taking the max freq each time
-    while i < (ROLL_PROB_ROWS << 1)
+    while i < ROLL_PROB_ROWS
         U freq_flag = 1
         U max_freq = 0
         U max_index = 0
@@ -103,19 +105,29 @@ fn update_roll_prob_digits()
         if max_freq == 0
             break
         taken_freqs |= max_flag
+        roll_prob_tap_counts[i] = max_index
+        roll_prob_tap_freqs[i] = max_freq
         // at this point max_index points to the correct row
         RangeFreq max_range_freq = range_freqs[max_index]
         // min hz is staged as sprites
         U min_hz_bcd = get_hz_bcd(max_index, max_range_freq.max_length)
-        stage_min_hz_sprites(min_hz_bcd, i)
-        // (24+2i, 167)
         U max_hz_bcd = get_hz_bcd(max_index, max_range_freq.min_length)
+        stage_hz_sprites(min_hz_bcd, i, 24, 2)
+        stage_hz_sprites(max_hz_bcd, i, 48, 3)
+        // precompute color
+        roll_prob_colors[i] = get_hz_color_bcd(min_hz_bcd)
+        roll_prob_colors[i+ROLL_PROB_ROWS] = get_hz_color_bcd(min_hz_bcd)
         i += 1
+    while i < ROLL_PROB_ROWS
+        roll_prob_tap_counts[i] = $FF
+        roll_prob_tap_freqs[i] = $FF
+        i += 1
+    subframe_render_flags |= SUBFRAME_RENDER_HZRNG
 
-fn stage_min_hz_sprites(U min_hz_bcd, U i)
-    U sprite_x = 24
+
+fn stage_hz_sprites(U hz_bcd, U i, U sprite_x, U pal)
     U sprite_y = 39 + (i << 4)
-    U first_digit = $F0 + (min_hz_bcd >> 4)
-    oam_index = push_oam(oam_index, sprite_x, sprite_y, first_digit, 3)
-    U second_digit = $F0 + (min_hz_bcd & %1111)
-    oam_index = push_oam(oam_index, sprite_x+8, sprite_y, second_digit, 3)
+    U first_digit = $D0 + (i << 4) + (hz_bcd >> 4)
+    oam_index = push_oam(oam_index, sprite_x, sprite_y, first_digit, pal)
+    U second_digit = $D0 + (i << 4) + (hz_bcd & %1111)
+    oam_index = push_oam(oam_index, sprite_x+8, sprite_y, second_digit, pal)

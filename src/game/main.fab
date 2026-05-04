@@ -81,6 +81,8 @@ fn handle_game_over() U
 // returns true if we should follow the dlr bug
 fn check_for_reset_key() Bool
     if pads[0].held == BUTTON_A | BUTTON_B | BUTTON_SELECT | BUTTON_START
+
+        show_next_piece = true
         mute_audio()
         return NESFAB_MODE_LEVEL_MENU
     return NESFAB_MODE_GAME
@@ -183,6 +185,7 @@ mode game()
 
     // init active and next piece
     active_piece_id = get_next_piece_id()
+    old_active_piece_id = PIECE_ID_NONE
     increment_piece_count(active_piece_id)
     advance_prng()
     next_piece_id = get_next_piece_id()
