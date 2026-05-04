@@ -46,9 +46,12 @@ fn render.game()
                 break
             copy_board_row_to_vram()
             vram_copy = true
-    handle_game_render()
-    if !vram_copy
+    if render_active_piece
+        write_active_piece_tiles()
+    if !vram_copy && game_render_flags == 0
         handle_subframe_render()
+    else
+        handle_game_render()
     // tetris flash
     ppu_set_addr($3F0E)
     U flash_color = $00
@@ -76,6 +79,18 @@ fn handle_subframe_render()
         : +unroll
             ppu_set_addr($2082 + UU(i << 6))
             {PPUDATA}(roll_prob_tap_counts[i])
+            {PPUDATA}(GAME_TILE_HIDDEN)
+            U j = 0
+            U empty_tile_count = (8 - roll_prob_tap_freqs[i]) >> 1
+            while j < empty_tile_count
+                {PPUDATA}(GAME_TILE_HIDDEN)
+                j += 1
+            if j < 4 && roll_prob_tap_freqs[i] & %1
+                {PPUDATA}(GAME_TILE_ODD_COUNT)
+                j += 1
+            while j < 4
+                {PPUDATA}(GAME_TILE_EVEN_COUNT)
+                j += 1
         // set palettes for hz sprites
         ppu_set_addr($2182)
         {PPUDATA}(eff_hz_taps)
@@ -93,12 +108,6 @@ fn handle_subframe_render()
 
 fn handle_game_render()
 : +inline
-    // always needs to be done!
-    if render_active_piece
-        write_active_piece_tiles()
-    // small optim for active piece render
-    if game_render_flags == 0
-        return
     if game_render_flags & GAME_RENDER_LINES > 0
         ppu_set_addr(ppu_addr_from_coords_ct(19, 3, 0))
         {PPUDATA}(lines_bcd.b)
