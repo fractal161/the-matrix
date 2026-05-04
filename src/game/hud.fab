@@ -127,6 +127,7 @@ fn stage_hud_sprites()
     stage_input_stream_sprites(ab_input_stream, 71, GAME_SPRITE_PAL_AB)
     stage_delay_graph()
     update_roll_prob_digits()
+    stage_eff_hz_sprites()
 
 // UUs for laziness
 ct UU[9] EIGHTH_DECIMALS = UU[]($0000, $0103, $0205, $0308,
