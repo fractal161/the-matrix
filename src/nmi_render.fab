@@ -73,7 +73,8 @@ fn handle_subframe_render()
 fn handle_game_render()
 : +inline
     // always needs to be done!
-    write_active_piece_tiles()
+    if render_active_piece
+        write_active_piece_tiles()
     // small optim for active piece render
     if game_render_flags == 0
         return

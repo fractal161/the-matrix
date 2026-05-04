@@ -184,15 +184,20 @@ vars /game
     U old_piece_x = 5
     U old_piece_y = 0
     U old_active_piece_id
+    Bool render_active_piece = false
     PpuWrite[4] old_active_piece_tiles
     PpuWrite[4] new_active_piece_tiles
 
 fn compute_active_piece_tiles()
+    render_active_piece = true
     if active_piece_id == PIECE_ID_NONE
-        // set all addresses to $2000 to skip
-        for U i = 0; i < 4; i += 1
-            old_active_piece_tiles[i].addr = $2000
-            new_active_piece_tiles[i].addr = $2000
+        render_active_piece = false
+        return
+    if (old_piece_x == piece_x
+        && old_piece_y == piece_y
+        && old_active_piece_id == active_piece_id
+    )
+        render_active_piece = false
         return
     PieceTileset old_tileset = get_piece_tileset(old_active_piece_id)
     // PART 1: clear old tiles
@@ -220,11 +225,13 @@ fn compute_active_piece_tiles()
 fn write_active_piece_tiles()
     // clear out olds
     for U i = 0; i < 4; i += 1
+    : +unroll
         if old_active_piece_tiles[i].addr > $2000
             ppu_set_addr(old_active_piece_tiles[i].addr)
             {PPUDATA}(old_active_piece_tiles[i].tile)
     // write in news
     for U i = 0; i < 4; i += 1
+    : +unroll
         if new_active_piece_tiles[i].addr > $2000
             ppu_set_addr(new_active_piece_tiles[i].addr)
             {PPUDATA}(new_active_piece_tiles[i].tile)
