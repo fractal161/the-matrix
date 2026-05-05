@@ -87,7 +87,7 @@ fn check_for_reset_key() Bool
         return NESFAB_MODE_LEVEL_MENU
     return NESFAB_MODE_GAME
 
-ct U[5] PAUSE_TILES = U[]($85, $86, $87, $88, $89)
+ct U[5] PAUSE_TILES = U[]($8B, $8C, $8D, $8E, $8F)
 
 fn handle_pause()
     // stage pause sprite after current/next

@@ -239,7 +239,7 @@ fn stage_delay_graph()
         if delay_graph[i] > 240-DELAY_GRAPH_START
             sprite_x = 240
         U sprite_y = 215
-        U tile = $83
+        U tile = $83+3 - (i >> 1)
 
         U pal = GAME_SPRITE_PAL_LR
         ct U RED_THRESHOLD = 8*NEGATIVE_INPUT_OFFSET - 7
@@ -249,5 +249,5 @@ fn stage_delay_graph()
             pal = GAME_SPRITE_PAL_AB
         if delay_graph[i] > YELLOW_THRESHOLD
             // yellow dot
-            tile = $84
+            tile = $87 + 3 - (i >> 1)
         oam_index = push_oam(oam_index, sprite_x, sprite_y, tile, pal)

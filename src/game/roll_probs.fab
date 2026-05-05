@@ -113,8 +113,8 @@ fn update_roll_prob_digits()
         // min hz is staged as sprites
         U min_hz_bcd = get_hz_bcd(max_index, max_range_freq.max_length)
         U max_hz_bcd = get_hz_bcd(max_index, max_range_freq.min_length)
-        stage_hz_sprites(min_hz_bcd, i, 24, 2)
-        stage_hz_sprites(max_hz_bcd, i, 48, 3)
+        stage_hz_sprites(min_hz_bcd, i, 24, 2, $D0)
+        stage_hz_sprites(max_hz_bcd, i, 48, 3, $E0)
         // precompute color
         roll_prob_colors[i] = get_hz_color_bcd(min_hz_bcd)
         roll_prob_colors[i+ROLL_PROB_ROWS] = get_hz_color_bcd(min_hz_bcd)
@@ -158,11 +158,11 @@ fn update_roll_prob_tap_rows(U i, U taps, U freq)
         roll_prob_tap_rows[base_offset + j] = tile
         j += 1
 
-fn stage_hz_sprites(U hz_bcd, U i, U sprite_x, U pal)
+fn stage_hz_sprites(U hz_bcd, U i, U sprite_x, U pal, U number_offset)
     U sprite_y = 39 + (i << 4)
-    U first_digit = $D0 + (i << 4) + (hz_bcd >> 4)
+    U first_digit = number_offset + (i << 4) + (hz_bcd >> 4)
     oam_index = push_oam(oam_index, sprite_x, sprite_y, first_digit, pal)
-    U second_digit = $D0 + (i << 4) + (hz_bcd & %1111)
+    U second_digit = number_offset + (i << 4) + (hz_bcd & %1111)
     oam_index = push_oam(oam_index, sprite_x+8, sprite_y, second_digit, pal)
 
 fn stage_eff_hz_sprites()
