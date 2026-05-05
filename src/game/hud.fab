@@ -38,15 +38,14 @@ vars /hud
 
     // input lengths
     U current_space_idx = $FF
-    U[NUM_SPACES] input_lengths = U[NUM_SPACES](0)
-    U[NUM_SPACES] gap_lengths = U[NUM_SPACES](0)
+    U current_space_length = 0
+    U[NUM_SPACES] input_lengths = U[NUM_SPACES](-1)
+    U[NUM_SPACES] gap_lengths = U[NUM_SPACES](-1)
     MinSpaceDigits min_space_digits
     U min_space = 0
 
     U recording_state = 0
     U recording_timeout = 0
-
-    U tap_count = 0
 
     U input_stream_state = INPUT_STREAM_STATE_WAITING
     U input_stream_index = 0 // how many frames we've been tracking
@@ -58,11 +57,15 @@ vars /hud
     U subframe_render_flags = 0
 
 fn reset_hz_and_space_state()
-    tap_count = 0
-    current_space_idx = $FF
     roll_prob_index = 0
     for U i = 0; i < NUM_SUBFRAMES; i += 1
         subframe_tap_info[i] = TapInfo(NULL_TAP_INFO, 0)
+
+    current_space_idx = $FF
+    current_space_length = 0
+    for U i = 0; i < NUM_SPACES; i += 1
+        input_lengths[i] = 0
+        gap_lengths[i] = 0
 
 // updates hud state for every poll
 fn update_hud_poll(Bool poll, Bool last_poll, Bool last_frame_poll, U i)
@@ -72,11 +75,12 @@ fn update_hud_poll(Bool poll, Bool last_poll, Bool last_frame_poll, U i)
             recording_state = RECORDING_ON
             reset_hz_and_space_state()
         if !last_poll
+            if current_space_idx >= 0 && current_space_idx < NUM_SPACES
+                gap_lengths[current_space_idx] = current_space_length
             current_space_idx += 1
-            tap_count += 1
+            current_space_length = 0
         // TODO: maybe we add a limit to this later?
-        if current_space_idx < NUM_SPACES
-            input_lengths[current_space_idx] += 1
+        current_space_length += 1
         recording_timeout = 0
         if !last_frame_poll
             update_roll_prob_tap_info(i)
@@ -84,8 +88,10 @@ fn update_hud_poll(Bool poll, Bool last_poll, Bool last_frame_poll, U i)
         if recording_timeout == RECORDING_TIMEOUT
             recording_state = RECORDING_OFF
         else
-            if current_space_idx < NUM_SPACES
-                gap_lengths[current_space_idx] += 1
+            if last_poll && current_space_idx < NUM_SPACES
+                input_lengths[current_space_idx] = current_space_length
+                current_space_length = 0
+            current_space_length += 1
             recording_timeout += 1
     // update input delay
     if poll && delay_graph[NUM_DELAYS-1] == $FF
@@ -168,7 +174,7 @@ fn update_min_space_tiles()
             new_min_space = input_lengths[i]
         if gap_lengths[i] > 0 && gap_lengths[i] < new_min_space
             new_min_space = gap_lengths[i]
-    if min_space != new_min_space
+    if new_min_space != $FF && min_space != new_min_space
         subframe_render_flags |= SUBFRAME_RENDER_MIN
     min_space = new_min_space
     if min_space < NUM_SUBFRAMES

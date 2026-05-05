@@ -95,6 +95,12 @@ fn handle_subframe_render()
         {PPUDATA}(roll_prob_colors[3])
         {PPUDATA}(roll_prob_colors[4])
         {PPUDATA}(roll_prob_colors[5])
+    if subframe_render_flags & SUBFRAME_RENDER_MIN > 0
+        ppu_set_addr(ppu_addr_from_coords_ct(4, 15, 0))
+        {PPUDATA}(min_space_digits.lead)
+        {PPUDATA}(min_space_digits.dot)
+        {PPUDATA}(min_space_digits.decimal.b)
+        {PPUDATA}(min_space_digits.decimal.a)
     subframe_render_flags = 0
 
 fn handle_game_render()
