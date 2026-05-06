@@ -43,6 +43,7 @@ vars /hud
     U[NUM_SPACES] gap_lengths = U[NUM_SPACES](-1)
     MinSpaceDigits min_space_digits
     U min_space = 0
+    U[8*NUM_SPACES] space_tiles
 
     U recording_state = 0
     U recording_timeout = 0
@@ -134,8 +135,9 @@ fn update_hud_delayed()
     roll_prob_index += 1
     // prep tiles as needed
     update_delay_tiles()
-    // handle min space
+    // handle spaces
     update_min_space_tiles()
+    update_space_graph_tiles()
 
 fn update_input_streams()
     if subframe_active_index >= INPUT_STREAM_LENGTH
@@ -187,6 +189,82 @@ fn update_min_space_tiles()
         min_space_digits.lead = min_space >> 3
         min_space_digits.dot = $2A
         min_space_digits.decimal = EIGHTH_DECIMALS[min_space & %111]
+
+// precompute tiles
+omni data /hud
+    [] space_cols_inputs
+        label c0
+        U[4]($FF, $60, $FF, $60)
+        label c1
+        U[4]($FF, $60, $FF, $44)
+        label c2
+        U[4]($FF, $60, $FF, $45)
+        label c3
+        U[4]($FF, $60, $FF, $46)
+        label c4
+        U[4]($FF, $60, $FF, $47)
+        label c5
+        U[4]($FF, $60, $4C, $47)
+        label c6
+        U[4]($FF, $60, $4D, $47)
+        label c7
+        U[4]($FF, $60, $4E, $47)
+        label c8
+        U[4]($FF, $60, $4B, $43)
+        label c9
+        U[4]($FF, $40, $4B, $43)
+        label c10
+        U[4]($FF, $41, $4B, $43)
+        label c11
+        U[4]($FF, $42, $4B, $43)
+        label c12
+        U[4]($FF, $43, $4B, $43)
+        label c13
+        U[4]($48, $43, $4B, $43)
+        label c14
+        U[4]($49, $43, $4B, $43)
+        label c15
+        U[4]($4A, $43, $4B, $43)
+        label c16
+        U[4]($4B, $43, $4B, $43)
+    [] space_cols_gaps
+        label c0
+        U[4]($61, $FF, $61, $FF)
+        label c1
+        U[4]($54, $FF, $61, $FF)
+        label c2
+        U[4]($55, $FF, $61, $FF)
+        label c3
+        U[4]($56, $FF, $61, $FF)
+        label c4
+        U[4]($57, $FF, $61, $FF)
+        label c5
+        U[4]($57, $5C, $61, $FF)
+        label c6
+        U[4]($57, $5D, $61, $FF)
+        label c7
+        U[4]($57, $5E, $61, $FF)
+        label c8
+        U[4]($53, $5B, $61, $FF)
+        label c9
+        U[4]($53, $5B, $61, $FF)
+        label c10
+        U[4]($53, $5B, $61, $FF)
+        label c11
+        U[4]($53, $5B, $61, $FF)
+        label c12
+        U[4]($53, $5B, $61, $FF)
+        label c13
+        U[4]($53, $5B, $61, $FF)
+        label c14
+        U[4]($53, $5B, $61, $FF)
+        label c15
+        U[4]($53, $5B, $61, $FF)
+        label c16
+        U[4]($53, $5B, $61, $FF)
+
+fn update_space_graph_tiles()
+    subframe_render_flags |= SUBFRAME_RENDER_SPACE
 
 fn update_delay_tiles()
 : +inline

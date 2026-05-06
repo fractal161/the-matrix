@@ -101,6 +101,7 @@ fn handle_subframe_render()
         {PPUDATA}(min_space_digits.dot)
         {PPUDATA}(min_space_digits.decimal.b)
         {PPUDATA}(min_space_digits.decimal.a)
+    if subframe_render_flags & SUBFRAME_RENDER_SPACE
     subframe_render_flags = 0
 
 fn handle_game_render()
