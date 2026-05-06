@@ -39,11 +39,16 @@ vars /hud
     // input lengths
     U current_space_idx = $FF
     U current_space_length = 0
-    U[NUM_SPACES] input_lengths = U[NUM_SPACES](-1)
-    U[NUM_SPACES] gap_lengths = U[NUM_SPACES](-1)
+    U[NUM_SPACES] input_lengths
+    U[NUM_SPACES] gap_lengths
     MinSpaceDigits min_space_digits
     U min_space = 0
-    U[8*NUM_SPACES] space_tiles
+    CC[NUM_SPACES] input_col_ptrs
+    CC[NUM_SPACES] gap_col_ptrs
+    U new_space_col_index = $FF // new things
+    U clear_space_col_index = 0 // used to track what col to clear
+    U space_col_render_index = 0 // what's ACTUALLY rendered
+    U[8] space_col_tiles // precomputed tiles
 
     U recording_state = 0
     U recording_timeout = 0
@@ -67,6 +72,7 @@ fn reset_hz_and_space_state()
     for U i = 0; i < NUM_SPACES; i += 1
         input_lengths[i] = 0
         gap_lengths[i] = 0
+    clear_space_col_index = 0
 
 // updates hud state for every poll
 fn update_hud_poll(Bool poll, Bool last_poll, Bool last_frame_poll, U i)
@@ -76,8 +82,9 @@ fn update_hud_poll(Bool poll, Bool last_poll, Bool last_frame_poll, U i)
             recording_state = RECORDING_ON
             reset_hz_and_space_state()
         if !last_poll
-            if current_space_idx >= 0 && current_space_idx < NUM_SPACES
+            if current_space_idx < NUM_SPACES
                 gap_lengths[current_space_idx] = current_space_length
+                new_space_col_index = current_space_idx
             current_space_idx += 1
             current_space_length = 0
         // TODO: maybe we add a limit to this later?
@@ -91,6 +98,7 @@ fn update_hud_poll(Bool poll, Bool last_poll, Bool last_frame_poll, U i)
         else
             if last_poll && current_space_idx < NUM_SPACES
                 input_lengths[current_space_idx] = current_space_length
+                new_space_col_index = current_space_idx
                 current_space_length = 0
             current_space_length += 1
             recording_timeout += 1
@@ -121,11 +129,12 @@ fn update_last_frame_polls()
 fn update_hud_delayed()
 : +inline
     // handle poll specific updates
-    Bool last_lr = (previous_lr_polls[1] <-< false)
+    U tmp = previous_lr_polls[1]
+    Bool last_lr = (tmp <=< false)
     U last_frame_lr_polls = previous_lr_polls[1]
     U lr_polls = previous_lr_polls[0]
     for U i = 0; i < NUM_SUBFRAMES; i += 1
-        U next_lr = (false >=> lr_polls)
+        Bool next_lr = (false >=> lr_polls)
         U last_frame_lr = (false >=> last_frame_lr_polls)
         update_hud_poll(next_lr, last_lr, last_frame_lr, i)
         last_lr = next_lr
@@ -181,7 +190,7 @@ fn update_min_space_tiles()
     min_space = new_min_space
     if min_space < NUM_SUBFRAMES
         // red text
-        min_space_digits.lead = min_space >> 3 + $E0
+        min_space_digits.lead = (min_space >> 3) + $E0
         min_space_digits.dot = $EB
         min_space_digits.decimal = EIGHTH_DECIMALS[min_space & %111] + $E0E0
     else
@@ -191,8 +200,8 @@ fn update_min_space_tiles()
         min_space_digits.decimal = EIGHTH_DECIMALS[min_space & %111]
 
 // precompute tiles
-omni data /hud
-    [] space_cols_inputs
+omni data
+    [] space_input_cols
         label c0
         U[4]($FF, $60, $FF, $60)
         label c1
@@ -227,7 +236,7 @@ omni data /hud
         U[4]($4A, $43, $4B, $43)
         label c16
         U[4]($4B, $43, $4B, $43)
-    [] space_cols_gaps
+    [] space_gap_cols
         label c0
         U[4]($61, $FF, $61, $FF)
         label c1
@@ -247,24 +256,80 @@ omni data /hud
         label c8
         U[4]($53, $5B, $61, $FF)
         label c9
-        U[4]($53, $5B, $61, $FF)
+        U[4]($53, $5B, $50, $FF)
         label c10
-        U[4]($53, $5B, $61, $FF)
+        U[4]($53, $5B, $51, $FF)
         label c11
-        U[4]($53, $5B, $61, $FF)
+        U[4]($53, $5B, $52, $FF)
         label c12
-        U[4]($53, $5B, $61, $FF)
+        U[4]($53, $5B, $53, $FF)
         label c13
-        U[4]($53, $5B, $61, $FF)
+        U[4]($53, $5B, $53, $58)
         label c14
-        U[4]($53, $5B, $61, $FF)
+        U[4]($53, $5B, $53, $59)
         label c15
-        U[4]($53, $5B, $61, $FF)
+        U[4]($53, $5B, $53, $5A)
         label c16
-        U[4]($53, $5B, $61, $FF)
+        U[4]($53, $5B, $53, $5B)
+
+ct CC[17] space_input_col_ptr_table = CC[](
+    CC(space_input_cols.c0),
+    CC(space_input_cols.c1),
+    CC(space_input_cols.c2),
+    CC(space_input_cols.c3),
+    CC(space_input_cols.c4),
+    CC(space_input_cols.c5),
+    CC(space_input_cols.c6),
+    CC(space_input_cols.c7),
+    CC(space_input_cols.c8),
+    CC(space_input_cols.c9),
+    CC(space_input_cols.c10),
+    CC(space_input_cols.c11),
+    CC(space_input_cols.c12),
+    CC(space_input_cols.c13),
+    CC(space_input_cols.c14),
+    CC(space_input_cols.c15),
+    CC(space_input_cols.c16),
+)
+
+ct CC[17] space_gap_col_ptr_table = CC[](
+    CC(space_gap_cols.c0),
+    CC(space_gap_cols.c1),
+    CC(space_gap_cols.c2),
+    CC(space_gap_cols.c3),
+    CC(space_gap_cols.c4),
+    CC(space_gap_cols.c5),
+    CC(space_gap_cols.c6),
+    CC(space_gap_cols.c7),
+    CC(space_gap_cols.c8),
+    CC(space_gap_cols.c9),
+    CC(space_gap_cols.c10),
+    CC(space_gap_cols.c11),
+    CC(space_gap_cols.c12),
+    CC(space_gap_cols.c13),
+    CC(space_gap_cols.c14),
+    CC(space_gap_cols.c15),
+    CC(space_gap_cols.c16),
+)
 
 fn update_space_graph_tiles()
+    for U i = 0; i < NUM_SPACES; i += 1
+        input_col_ptrs[i] = space_input_col_ptr_table[min(input_lengths[i], 16)]
+        gap_col_ptrs[i] = space_gap_col_ptr_table[min(gap_lengths[i], 16)]
     subframe_render_flags |= SUBFRAME_RENDER_SPACE
+    // compute column to render
+    if new_space_col_index == $FF
+        space_col_render_index = clear_space_col_index
+        if clear_space_col_index < NUM_SPACES - 1
+            clear_space_col_index += 1
+    else
+        space_col_render_index = new_space_col_index
+        new_space_col_index -= 1
+    CC input_col_ptr = input_col_ptrs[space_col_render_index]
+    CC gap_col_ptr = gap_col_ptrs[space_col_render_index]
+    for U i = 0; i < 4; i += 1
+        space_col_tiles[i] = input_col_ptr[i]
+        space_col_tiles[i+4] = gap_col_ptr[i]
 
 fn update_delay_tiles()
 : +inline

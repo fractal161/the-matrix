@@ -95,6 +95,7 @@ fn handle_subframe_render()
         {PPUDATA}(roll_prob_colors[3])
         {PPUDATA}(roll_prob_colors[4])
         {PPUDATA}(roll_prob_colors[5])
+        subframe_render_flags
     if subframe_render_flags & SUBFRAME_RENDER_MIN > 0
         ppu_set_addr(ppu_addr_from_coords_ct(4, 15, 0))
         {PPUDATA}(min_space_digits.lead)
@@ -102,6 +103,17 @@ fn handle_subframe_render()
         {PPUDATA}(min_space_digits.decimal.b)
         {PPUDATA}(min_space_digits.decimal.a)
     if subframe_render_flags & SUBFRAME_RENDER_SPACE
+        // set ppu to vertical mode
+        ppu_ctrl |= PPUCTRL_VRAM_32_DOWN
+        {PPUCTRL}(ppu_ctrl)
+        {PPUADDR}($22)
+        {PPUADDR}($42+space_col_render_index)
+        for U i = 0; i < 8; i += 1
+        : +unroll
+            {PPUDATA}(space_col_tiles[i])
+        // set ppu back to horizontal
+        ppu_ctrl &= ~PPUCTRL_VRAM_32_DOWN
+        {PPUCTRL}(ppu_ctrl)
     subframe_render_flags = 0
 
 fn handle_game_render()
