@@ -36,6 +36,7 @@ fn update_line_clear_animation()
 
 // TODO: optimize this to oblivion
 fn render.game()
+: +static
     Bool vram_copy = false
     if play_state == PLAY_STATE_WAIT_FOR_LINE_CLEAR_ANIM
         update_line_clear_animation()
@@ -66,7 +67,7 @@ fn render.game()
     ppu_set_scroll(0, 0)
 
 fn handle_subframe_render()
-: +inline
+: +inline+static
     if subframe_render_flags & SUBFRAME_RENDER_DELAY > 0
         ppu_set_addr(ppu_addr_from_coords_ct(25, 25, 0))
         {PPUDATA}(delay_digits.sign)
@@ -117,7 +118,7 @@ fn handle_subframe_render()
     subframe_render_flags = 0
 
 fn handle_game_render()
-: +inline
+: +inline+static
     if game_render_flags & GAME_RENDER_LINES > 0
         ppu_set_addr(ppu_addr_from_coords_ct(19, 3, 0))
         {PPUDATA}(lines_bcd.b)
@@ -155,6 +156,7 @@ ct fn VRAM_ROW_TABLE() UU[$20]
     return table
 
 asm fn copy_row_raw(U row_offset)
+: +static+inline
 : employs
     default
     ldx &row_offset
@@ -187,6 +189,7 @@ ct fn TIMES_TEN_TABLE() U[26]
     return table
 
 fn copy_board_row_to_vram()
+: +static
     ppu_set_addr(VRAM_ROW_TABLE()[6+vram_row])
     U row_offset = TIMES_TEN_TABLE()[vram_row]
     copy_row_raw(row_offset)
@@ -204,6 +207,7 @@ fn render.high_score_entry()
     ppu_set_scroll(0, 0)
 
 fn nmi_render()
+: +static
     switch render_mode
         case RENDER_MENU_SCREEN
             render.menu_screens()

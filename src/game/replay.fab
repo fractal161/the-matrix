@@ -1,0 +1,22 @@
+// for now, try and fit PRG RAM data within 64k
+// if GameState is 128 bytes, then we get 512 pieces, which is plenty
+
+// goal: < 128
+struct GameState
+    U[50] board
+    U[INPUT_STREAM_LENGTH] lr_input_stream
+    U[INPUT_STREAM_LENGTH] ab_input_stream
+    U[NUM_DELAYS] delays
+    U current_piece
+    U next_piece
+    U final_x
+    U final_y
+    U final_rot
+
+vars /game
+    GameState replay_state
+    : +align
+
+fn write_game_state(UU slot)
+
+fn read_game_state(UU slot)

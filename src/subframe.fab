@@ -25,6 +25,7 @@ vars /game
 
 
 fn handle_subframe_nmi()
+: +static
     // hack to clear interrupt so the subframe polls can run
     cli()
     {MMC5_SCANLINE_STATUS}($80)
@@ -35,6 +36,7 @@ fn handle_subframe_nmi()
     handle_subframe_poll()
 
 irq subframe_poll()
+: +static
     // acknowledge
     {MMC5_SCANLINE_STATUS}()
     fence
@@ -46,6 +48,7 @@ irq subframe_poll()
     handle_subframe_poll()
 
 fn handle_subframe_poll()
+: +static
     // TODO: make it so this only updates state
     Bool is_lr_pressed = subframe_pad.held & (BUTTON_LEFT | BUTTON_RIGHT)
     Bool is_ab_pressed = subframe_pad.held & (BUTTON_A | BUTTON_B)
@@ -58,6 +61,7 @@ fn handle_subframe_poll()
         subframe_index = 0
 
 asm fn cli()
+: +static+inline
 : employs
     cli
     rts

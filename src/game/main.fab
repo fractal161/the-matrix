@@ -130,6 +130,8 @@ nmi game_nmi()
         subframe_state = SUBFRAME_STATE_SHUTDOWN
     if play_state >= PLAY_STATE_UPDATE_STATS && vram_row == SUBFRAME_VRAM_ROW
         subframe_state = SUBFRAME_STATE_STARTUP
+    if play_state == PLAY_STATE_CURTAIN
+        subframe_state = SUBFRAME_STATE_ON
 
     update_last_frame_polls()
     fence

@@ -223,6 +223,7 @@ fn compute_active_piece_tiles()
         new_active_piece_tiles[i].tile = tile.tile_type
 
 fn write_active_piece_tiles()
+: +static
     // clear out olds
     for U i = 0; i < 4; i += 1
     : +unroll

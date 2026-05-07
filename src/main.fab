@@ -43,7 +43,7 @@ nmi main_nmi()
     main_nmi_fn()
 
 fn main_nmi_fn()
-: +inline
+: +inline+static
     oam_index = 0
     poll_pads()
     fence
