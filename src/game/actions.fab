@@ -17,6 +17,12 @@ fn set_allegro()
         set_music()
 
 fn game_action.lock_piece() U
+    // save board state
+    write_current_game_state(replay_slot)
+    replay_slot += 1
+    if replay_slot == MAX_REPLAY_SLOTS
+        replay_slot = 0
+    // then actual last piece check
     if !is_position_valid()
         set_sfx(SFX_CURTAIN)
         curtain_row = -$10

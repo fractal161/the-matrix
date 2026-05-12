@@ -35,6 +35,8 @@ vars /game
     U next_nesfab_mode = NESFAB_MODE_GAME
     Bool paused = false
 
+    UU replay_slot = 0
+
     // demo temp vars
 
 fn update_timers_and_check_select()
@@ -123,6 +125,7 @@ fn game_logic()
 ct U SUBFRAME_VRAM_ROW = 24-4*NEGATIVE_INPUT_OFFSET
 
 nmi game_nmi()
+: +static
     main_nmi_fn()
     // handle subframe polling
     if (play_state == PLAY_STATE_LOCK_PIECE
