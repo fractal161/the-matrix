@@ -1,11 +1,11 @@
 // for now, try and fit PRG RAM data within 64k
-// if GameState is 128 bytes, then we get 512 pieces, which is plenty
+// if GameSnapshot is 128 bytes, then we get 512 pieces, which is plenty
 // 64 per 8k bank
 
 ct UU MAX_REPLAY_SLOTS = 512
 
 // goal: < 128
-struct GameState
+struct GameSnapshot
     U[50] packed_board
     U[INPUT_STREAM_LENGTH] lr_input_stream
     U[INPUT_STREAM_LENGTH] ab_input_stream
@@ -30,9 +30,11 @@ fn write_current_game_state(UU slot)
     U offset = slot.a & %111111
     {MMC5_PRG_RAM_SELECT}(page)
     MM sram_ptr = MM($6000 + (UU(offset) << 7))
+    GameSnapshot snapshot
 
     // current benchmark: ~80 scanlines
     set_breakpoint($8000)
+    fence
     U board_idx = 0
     for U i = 0; i < 50; i += 1
         U packed_tile = 0
@@ -40,35 +42,33 @@ fn write_current_game_state(UU slot)
             packed_tile <<= 2
             packed_tile += tile_to_packed_table()[@board[board_idx]]
             board_idx += 1
-        sram_ptr[i] = packed_tile
+        snapshot.packed_board[i] = packed_tile
+    fence
     set_breakpoint($8000)
-    sram_ptr += 50
     // current benchmark: ~10 scanlines
     // input streams
     if input_stream_state == INPUT_STREAM_STATE_WAITING
         // lr_input_stream
         for U i = 0; i < INPUT_STREAM_LENGTH; i += 1
-            sram_ptr[i] = 0
-        // ab_input_stream
-        for U i = 0; i < INPUT_STREAM_LENGTH; i += 1
-            sram_ptr[INPUT_STREAM_LENGTH+i] = 0
+            snapshot.lr_input_stream[i] = 0
+            snapshot.ab_input_stream[i] = 0
     else
         for U i = 0; i < INPUT_STREAM_LENGTH; i += 1
-            sram_ptr[i] = lr_input_stream[i]
+            snapshot.lr_input_stream[i] = lr_input_stream[i]
         for U i = 0; i < INPUT_STREAM_LENGTH; i += 1
-            sram_ptr[INPUT_STREAM_LENGTH+i] = ab_input_stream[i]
-    sram_ptr += INPUT_STREAM_LENGTH << 1
+            snapshot.ab_input_stream[i] = ab_input_stream[i]
     // delays
     for U i = 0; i < NUM_DELAYS; i += 1
-        write U(sram_ptr, delay_graph[i])
+        snapshot.delays[i] = delay_graph[i]
     // active_piece_id
-    write U(sram_ptr, active_piece_id)
+    snapshot.active_piece_id = active_piece_id
     // next_piece_id
-    write U(sram_ptr, next_piece_id)
+    snapshot.next_piece_id = next_piece_id
     // final_x
-    write U(sram_ptr, piece_x)
+    snapshot.final_x = piece_x
     // final_y
-    write U(sram_ptr, piece_y)
+    snapshot.final_y = piece_y
+    write GameSnapshot(sram_ptr, snapshot)
 
 ct U[4] packed_to_tile_table = U[4](
     GAME_TILE_EMPTY,
@@ -82,25 +82,25 @@ fn read_game_state(UU slot)
     U offset = slot.a & %111111
     {MMC5_PRG_RAM_SELECT}(page)
     MM sram_ptr = MM($6000 + (UU(offset) << 7))
-    GameState replay_state = read GameState(sram_ptr)
+    GameSnapshot snapshot = read GameSnapshot(sram_ptr)
     // board
     U board_idx = 0
     for U i = 0; i < 50; i += 1
-        U packed_tile = replay_state.packed_board[i]
+        U packed_tile = snapshot.packed_board[i]
         for U j = 3; j >= 0; j -= 1
-            U packed = replay_state.packed_board[i] & %11
-            replay_state.packed_board[i] >>= 2
+            U packed = snapshot.packed_board[i] & %11
+            snapshot.packed_board[i] >>= 2
             @board[board_idx] = packed_to_tile_table[packed]
             board_idx += 1
     // input streams
     for U i = 0; i < INPUT_STREAM_LENGTH; i += 1
-        lr_input_stream[i] = replay_state.lr_input_stream[i]
-        ab_input_stream[i] = replay_state.ab_input_stream[i]
+        lr_input_stream[i] = snapshot.lr_input_stream[i]
+        ab_input_stream[i] = snapshot.ab_input_stream[i]
     // delays
     for U i = 0; i < NUM_DELAYS; i += 1
-         delay_graph[i] = replay_state.delays[i]
+         delay_graph[i] = snapshot.delays[i]
     // single variables
-    active_piece_id = replay_state.active_piece_id
-    next_piece_id = replay_state.next_piece_id
-    piece_x = replay_state.final_x
-    piece_y = replay_state.final_y
+    active_piece_id = snapshot.active_piece_id
+    next_piece_id = snapshot.next_piece_id
+    piece_x = snapshot.final_x
+    piece_y = snapshot.final_y
