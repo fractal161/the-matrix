@@ -2,7 +2,7 @@
 // if GameSnapshot is 128 bytes, then we get 512 pieces, which is plenty
 // 64 per 8k bank
 
-ct UU MAX_REPLAY_SLOTS = 512
+ct SS MAX_REPLAY_SLOTS = 512
 
 // goal: < 128
 struct GameSnapshot
@@ -25,7 +25,7 @@ ct fn tile_to_packed_table() U[256]
     table[GAME_TILE_3] = 3
     return table
 
-fn write_current_game_state(UU slot)
+fn write_current_game_snapshot(SS slot)
     U page = U(slot >> 6)
     U offset = slot.a & %111111
     {MMC5_PRG_RAM_SELECT}(page)
@@ -77,21 +77,20 @@ ct U[4] packed_to_tile_table = U[4](
     GAME_TILE_3,
 )
 
-fn read_game_state(UU slot)
+fn read_game_snapshot(SS slot)
     U page = U(slot >> 6)
     U offset = slot.a & %111111
     {MMC5_PRG_RAM_SELECT}(page)
     MM sram_ptr = MM($6000 + (UU(offset) << 7))
     GameSnapshot snapshot = read GameSnapshot(sram_ptr)
     // board
-    U board_idx = 0
     for U i = 0; i < 50; i += 1
         U packed_tile = snapshot.packed_board[i]
-        for U j = 3; j >= 0; j -= 1
+        for U j = 3; j != $FF; j -= 1
+            U board_idx = (i << 2) + j
             U packed = snapshot.packed_board[i] & %11
             snapshot.packed_board[i] >>= 2
             @board[board_idx] = packed_to_tile_table[packed]
-            board_idx += 1
     // input streams
     for U i = 0; i < INPUT_STREAM_LENGTH; i += 1
         lr_input_stream[i] = snapshot.lr_input_stream[i]

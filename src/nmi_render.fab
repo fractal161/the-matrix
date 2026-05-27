@@ -63,8 +63,10 @@ fn render.game()
             set_sfx(SFX_TETRIS_END)
     {PPUDATA}(flash_color)
     // DEBUG
-    // ppu_set_addr($2000)
-    // {PPUDATA, PPUDATA}(replay_slot.b, replay_slot.a)
+    ppu_set_addr($2000)
+    {PPUDATA}(replay_slot.a)
+    {PPUDATA}($FF)
+    {PPUDATA}(visible_replay_slot.a)
     // necessary to prevent a lag-frame type thing
     ppu_set_scroll(0, 0)
 

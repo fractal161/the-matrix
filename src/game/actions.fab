@@ -1,5 +1,6 @@
 vars /game
     U play_state = PLAY_STATE_GAME
+    Bool game_over = false
 
 fn game_action.player_control() U
     handle_lr()
@@ -18,19 +19,21 @@ fn set_allegro()
 
 fn game_action.lock_piece() U
     // save board state
-    write_current_game_state(replay_slot)
+    write_current_game_snapshot(replay_slot)
     replay_slot += 1
     if replay_slot == MAX_REPLAY_SLOTS
+        all_replay_slots_full = true
         replay_slot = 0
     // then actual last piece check
-    if !is_position_valid()
+    if game_over
         set_sfx(SFX_CURTAIN)
         curtain_row = -$10
         mute_audio()
-        return PLAY_STATE_CURTAIN
+        // sets up data
+        visible_replay_slot = replay_slot-1
+        return PLAY_STATE_REVIEW
     if S(vram_row) < $20
         return PLAY_STATE_LOCK_PIECE
-    add_piece_to_board()
     line_index = 0
     set_board_vram_row()
     set_allegro()
@@ -139,11 +142,27 @@ fn game_action.get_next_piece() U
 fn game_action.unknown_noop() U
     return PLAY_STATE_UNKNOWN_NOOP
 
-fn game_action.curtain() U
-    // wait for game over
+fn game_action.review() U
+    // go to screen
     if pads[0].pressed == BUTTON_START
         return PLAY_STATE_GAME_OVER
-    return PLAY_STATE_CURTAIN
+    // TODO: stage sprites for arrows, write snapshot numbers
+    // TODO: if left/right pressed, go to previous snapshot
+    // if pads[0].pressed == BUTTON_LEFT
+    //     visible_replay_slot -= 1
+    //     if visible_replay_slot < 0
+    //         if all_replay_slots_full
+    //             visible_replay_slot = MAX_REPLAY_SLOTS - 1
+    //         else
+    //             visible_replay_slot = replay_slot - 1
+    //     read_game_snapshot(visible_replay_slot)
+    //     vram_row = 0
+    // if pads[0].pressed == BUTTON_LEFT
+    //     visible_replay_slot += 1
+    //     // TODO: handle boundaries
+    //     read_game_snapshot(visible_replay_slot)
+    //     vram_row = 0
+    return PLAY_STATE_REVIEW
 
 // each game action returns the resulting state
 ct Fn.game_action[10] game_actions = Fn.game_action[](
@@ -156,7 +175,7 @@ ct Fn.game_action[10] game_actions = Fn.game_action[](
     @(game_action.receive_garbage),
     @(game_action.get_next_piece),
     @(game_action.unknown_noop),
-    @(game_action.curtain),
+    @(game_action.review),
 )
 
 fn update_player()

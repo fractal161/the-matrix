@@ -35,7 +35,9 @@ vars /game
     U next_nesfab_mode = NESFAB_MODE_GAME
     Bool paused = false
 
-    UU replay_slot = 0
+    SS replay_slot
+    SS visible_replay_slot
+    Bool all_replay_slots_full = false
 
     // demo temp vars
 
@@ -116,7 +118,7 @@ fn game_logic()
     next_nesfab_mode = check_for_reset_key()
     if next_nesfab_mode != NESFAB_MODE_GAME
         return
-    if pads[0].pressed == BUTTON_START && render_mode == RENDER_GAME && play_state < PLAY_STATE_CURTAIN
+    if pads[0].pressed == BUTTON_START && render_mode == RENDER_GAME && play_state < PLAY_STATE_REVIEW
         paused = true
         set_sfx(SFX_PAUSE)
         render_mode = RENDER_MENU_SCREEN
@@ -133,7 +135,7 @@ nmi game_nmi()
         subframe_state = SUBFRAME_STATE_SHUTDOWN
     if play_state >= PLAY_STATE_UPDATE_STATS && vram_row == SUBFRAME_VRAM_ROW
         subframe_state = SUBFRAME_STATE_STARTUP
-    if play_state == PLAY_STATE_CURTAIN
+    if play_state == PLAY_STATE_REVIEW
         subframe_state = SUBFRAME_STATE_ON
 
     update_last_frame_polls()

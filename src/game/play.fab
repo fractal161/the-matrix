@@ -82,12 +82,15 @@ fn try_gravity_drop() U
     return try_drop()
 
 // returns the resulting playstate
-fn try_drop() U 
+fn try_drop() U
     gravity_timer = 0
     piece_y += 1
     if !is_position_valid()
         piece_y -= 1
-        // set_board_vram_row()
+        if !is_position_valid()
+            game_over = true
+        add_piece_to_board()
+        set_board_vram_row()
         return PLAY_STATE_LOCK_PIECE
     return PLAY_STATE_GAME
 
