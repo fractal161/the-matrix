@@ -73,6 +73,9 @@ fn reset_hz_and_space_state()
         input_lengths[i] = 0
         gap_lengths[i] = 0
     clear_space_col_index = 0
+    // aligns the input stream during topout sitautions
+    if input_stream_state == INPUT_STREAM_STATE_CURTAIN
+        subframe_active_index = NEGATIVE_INPUT_OFFSET
 
 // updates hud state for every poll
 fn update_hud_poll(Bool poll, Bool last_poll, Bool last_frame_poll, U i)
@@ -104,6 +107,7 @@ fn update_hud_poll(Bool poll, Bool last_poll, Bool last_frame_poll, U i)
             recording_timeout += 1
     // update input delay
     if poll && delay_graph[NUM_DELAYS-1] == $FF
+        // reset graph
         delay_graph[NUM_DELAYS-1] = (subframe_active_index << 3) + i
         subframe_render_flags |= SUBFRAME_RENDER_DELAY
         if input_stream_state == INPUT_STREAM_STATE_WAITING
@@ -151,11 +155,12 @@ fn update_hud_delayed()
 fn update_input_streams()
     if subframe_active_index >= INPUT_STREAM_LENGTH
         return
+    if recording_state == RECORDING_OFF
+        return
     // case 1: no input yet this piece, then we return
     if input_stream_state == INPUT_STREAM_STATE_WAITING
         return
     // case 2: first input on this frame, then we set everything before to zero
-    // and then set thi
     if input_stream_state == INPUT_STREAM_STATE_INIT
         for U i = 0; i < INPUT_STREAM_LENGTH; i += 1
             lr_input_stream[i] = 0
