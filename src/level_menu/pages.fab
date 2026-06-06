@@ -6,6 +6,7 @@ vars /level_menu
 
 ct U LEVEL_MENU_RENDER_LEVEL = $01
 ct U LEVEL_MENU_RENDER_FLOOR = $02
+ct U LEVEL_MENU_RENDER_GOOFY = $04
 
 struct MenuSection
     U field_count
@@ -16,24 +17,25 @@ struct MenuSection
 // common across all
 ct U MENU_SECTION_TYPE = 0
 ct U MENU_SECTION_LEVEL = 1
+ct U MENU_SECTION_GOOFY = 2
 // a type
-ct U A_TYPE_SECTION_FLOOR = 2
-ct U A_TYPE_SECTION_DROUGHT = 3
-ct U A_TYPE_SECTION_COUNT = 4
+ct U A_TYPE_SECTION_FLOOR = 3
+ct U A_TYPE_SECTION_DROUGHT = 4
+ct U A_TYPE_SECTION_COUNT = 5
 // b type
-ct U B_TYPE_SECTION_HEIGHT = 2
-ct U B_TYPE_SECTION_FLOOR = 3
-ct U B_TYPE_SECTION_DROUGHT = 4
-ct U B_TYPE_SECTION_COUNT = 5
+ct U B_TYPE_SECTION_HEIGHT = 3
+ct U B_TYPE_SECTION_FLOOR = 4
+ct U B_TYPE_SECTION_DROUGHT = 5
+ct U B_TYPE_SECTION_COUNT = 6
 // c type (checkerboard)
-ct U C_TYPE_SECTION_HEIGHT = 2
-ct U C_TYPE_SECTION_DROUGHT = 3
-ct U C_TYPE_SECTION_COUNT = 4
+ct U C_TYPE_SECTION_HEIGHT = 3
+ct U C_TYPE_SECTION_DROUGHT = 4
+ct U C_TYPE_SECTION_COUNT = 5
 // d type (drills, TODO ignoring for now)
-ct U D_TYPE_SECTION_FLOOR = 2
-ct U D_TYPE_SECTION_QTAP = 3
-ct U D_TYPE_SECTION_PIECE = 4
-ct U D_TYPE_SECTION_COUNT = 5
+ct U D_TYPE_SECTION_FLOOR = 3
+ct U D_TYPE_SECTION_QTAP = 4
+ct U D_TYPE_SECTION_PIECE = 5
+ct U D_TYPE_SECTION_COUNT = 6
 
 ct U[GAME_TYPE_COUNT] MENU_SECTION_COUNTS = U[](
     A_TYPE_SECTION_COUNT,
@@ -42,27 +44,31 @@ ct U[GAME_TYPE_COUNT] MENU_SECTION_COUNTS = U[](
 
 ct MenuSection[TOTAL_SECTION_COUNT] ALL_MENU_SECTIONS = MenuSection[](
     // a-type
-    _menu_section_maker(1, 21, 10, 0),
-    _menu_section_maker(2, 20, 13, 0),
-    _menu_section_maker(1, 21, 16, 0),
-    _menu_section_maker(1, 20, 19, 0),
+    _menu_section_maker(1, 21, 10, 0), // type
+    _menu_section_maker(2, 20, 13, 0), // level
+    _menu_section_maker(1, 19, 16, 1), // goofy
+    _menu_section_maker(1, 21, 19, 0), // floor
+    _menu_section_maker(1, 20, 22, 0), // drought
     // b-type
-    _menu_section_maker(1, 21, 10, 0),
-    _menu_section_maker(2, 20, 13, 0),
-    _menu_section_maker(1, 21, 16, 0),
-    _menu_section_maker(1, 21, 19, 0),
-    _menu_section_maker(1, 20, 22, 0),
+    _menu_section_maker(1, 21, 10, 0), // type
+    _menu_section_maker(2, 20, 13, 0), // level
+    _menu_section_maker(2, 19, 16, 1), // goofy
+    _menu_section_maker(1, 21, 19, 0), // height
+    _menu_section_maker(1, 21, 22, 0), // floor
+    _menu_section_maker(1, 20, 25, 0), // drought
 )
 // has to be separate from ALL_MENU_SECTIONS for compile time reasons
 ct Fn.level_menu_change[TOTAL_SECTION_COUNT] LEVEL_MENU_CHANGE_FNS = Fn.level_menu_change[](
     // a-type
     @(level_menu_change.type),
     @(level_menu_change.level),
+    @(level_menu_change.goofy),
     @(level_menu_change.floor),
     @(level_menu_change.drought),
     // b-type
     @(level_menu_change.type),
     @(level_menu_change.level),
+    @(level_menu_change.goofy),
     @(level_menu_change.b_type_height),
     @(level_menu_change.floor),
     @(level_menu_change.drought),
@@ -73,11 +79,13 @@ ct Fn.level_menu_print[TOTAL_SECTION_COUNT] LEVEL_MENU_PRINT_FNS = Fn.level_menu
     // a-type
     @(level_menu_print.type),
     @(level_menu_print.level),
+    @(level_menu_print.goofy),
     @(level_menu_print.floor),
     @(level_menu_print.drought),
     // b-type
     @(level_menu_print.type),
     @(level_menu_print.level),
+    @(level_menu_print.goofy),
     @(level_menu_print.b_type_height),
     @(level_menu_print.floor),
     @(level_menu_print.drought),
@@ -176,3 +184,9 @@ fn get_level_menu_change_fn() Fn.level_menu_change
     U offset = MENU_SECTION_OFFSETS[game_type]
     U cursor_y = get_level_menu_cursor_y()
     return LEVEL_MENU_CHANGE_FNS[offset + cursor_y]
+
+fn get_level_menu_print_fn() Fn.level_menu_print
+: +inline
+    U offset = MENU_SECTION_OFFSETS[game_type]
+    U cursor_y = get_level_menu_cursor_y()
+    return LEVEL_MENU_PRINT_FNS[offset + cursor_y]

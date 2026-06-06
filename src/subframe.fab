@@ -42,10 +42,20 @@ irq subframe_poll()
     fence
     // schedule next irq
     {MMC5_SCANLINE_COMPARE}(SCANLINES[subframe_index])
-    poll_pads() // stored into raw_pads
+    update_raw_pads()
     subframe_pad = update_pad(subframe_pad, raw_pads[0])
     fence
     handle_subframe_poll()
+
+// to account for goofy
+fn update_raw_pads()
+    poll_pads()
+    if goofy_flag
+        apply_goofy()
+
+fn apply_goofy()
+    U poll_tmp = (raw_pads[0] << 1) & %10101010
+    raw_pads[0] = ((raw_pads[0] & %10101010) >> 1) | poll_tmp
 
 fn handle_subframe_poll()
 : +static

@@ -45,7 +45,7 @@ nmi main_nmi()
 fn main_nmi_fn()
 : +inline+static
     oam_index = 0
-    poll_pads()
+    update_raw_pads()
     fence
     nmi_render()
     ppu_upload_oam(0)

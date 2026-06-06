@@ -142,6 +142,9 @@ fn update_hud_delayed()
         U last_frame_lr = (false >=> last_frame_lr_polls)
         update_hud_poll(next_lr, last_lr, last_frame_lr, i)
         last_lr = next_lr
+    // trigger redrawing for rotations only
+    if previous_ab_poll > 0 && input_stream_state == INPUT_STREAM_STATE_WAITING
+        input_stream_state = INPUT_STREAM_STATE_INIT
     // handle end of frame processing
     update_input_streams()
     subframe_active_index += 1

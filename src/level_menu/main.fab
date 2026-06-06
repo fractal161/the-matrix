@@ -13,6 +13,7 @@ vars
     U start_level = 29
     U start_height = 0
     U floor = 0
+    Bool goofy_flag = false
 
     // use read/write HighScore(ptr) to interface
     [30] leaderboard_a
@@ -57,9 +58,12 @@ fn render.level_menu()
     if level_menu_render_flags & LEVEL_MENU_RENDER_LEVEL > 0
         // TODO: don't hardcode lmao
         level_menu_print.level(1)
+    if level_menu_render_flags & LEVEL_MENU_RENDER_GOOFY > 0
+        // TODO: don't hardcode lmao
+        level_menu_print.goofy(2)
     if level_menu_render_flags & LEVEL_MENU_RENDER_FLOOR > 0
         // TODO: don't hardcode lmao
-        level_menu_print.floor(2)
+        level_menu_print.floor(3)
     level_menu_render_flags = 0
 
 fn level_menu_change.type(U change)
@@ -101,6 +105,27 @@ ct U[100] two_digit_table = U[](
     $90,$91,$92,$93,$94,$95,$96,$97,$98,$99,
 )
 
+fn level_menu_change.goofy(U change)
+    // TODO: if we ever introduce input lag, look at what exhaustion does
+    goofy_flag = !goofy_flag
+    // swap current pads so we don't think we have new buttons
+    // TODO: this is duplicated from apply_goofy() but it uses a slightly different variable so idk how to do cleanly
+    U poll_tmp = (pads[0].held << 1) & %10101010
+    pads[0].held = ((pads[0].held & %10101010) >> 1) | poll_tmp
+    level_menu_render_flags |= LEVEL_MENU_RENDER_GOOFY
+
+fn level_menu_print.goofy(U row)
+    MenuSection section = ALL_MENU_SECTIONS[row]
+    ppu_set_addr(section.start_ppu_addr)
+    if goofy_flag
+        {PPUDATA}($FF)
+        {PPUDATA}($18)
+        {PPUDATA}($17)
+    else
+        {PPUDATA}($18)
+        {PPUDATA}($0F)
+        {PPUDATA}($0F)
+
 fn level_menu_change.floor(U change)
     floor += change
     if floor == $FF
@@ -131,24 +156,24 @@ fn handle_level_menu_input()
         if cursor_idx == MENU_CURSOR_COUNTS[game_type]
             cursor_idx = 0
         set_sfx(SFX_MENU_CHANGE)
-    if pads[0].pressed == BUTTON_LEFT
+    else if pads[0].pressed == BUTTON_LEFT
         cursor_idx -= 1
         if cursor_idx == $FF
             cursor_idx = MENU_CURSOR_COUNTS[game_type] - 1
         set_sfx(SFX_MENU_CHANGE)
-    if pads[0].pressed == BUTTON_DOWN
+    else if pads[0].pressed == BUTTON_DOWN
         // TODO: A+D handling
         get_level_menu_change_fn()($FF)
         set_sfx(SFX_MENU_CHANGE)
-    if pads[0].pressed == BUTTON_UP
+    else if pads[0].pressed == BUTTON_UP
         // TODO: A+U handling
         get_level_menu_change_fn()($01)
         set_sfx(SFX_MENU_CHANGE)
-    if pads[0].pressed == BUTTON_START
+    else if pads[0].pressed == BUTTON_START
         set_sfx(SFX_MENU_SELECT)
         goto mode game()
         : preserves
-    if pads[0].pressed == BUTTON_B
+    else if pads[0].pressed == BUTTON_B
         // set_sfx(SFX_MENU_SELECT)
         // goto mode type_menu()
         // : preserves
@@ -192,7 +217,8 @@ mode level_menu()
     load_nt(@nt_level_menu)
 
     level_menu_print.level(1)
-    level_menu_print.floor(2)
+    level_menu_print.goofy(2)
+    level_menu_print.floor(3)
     fence
     safe_enable_rendering()
     while true
