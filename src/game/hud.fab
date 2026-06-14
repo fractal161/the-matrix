@@ -30,6 +30,7 @@ vars /hud
     // U[0] is last frame, U[1] is two frames ago
     U[2] previous_lr_polls = U[](0, 0)
     U previous_ab_poll = 0
+    Bool lr_this_piece = false
     // input delay
     // real values are 0 - 8*23=184
     // $EA if negative, $FF otherwise
@@ -106,8 +107,11 @@ fn update_hud_poll(Bool poll, Bool last_poll, Bool last_frame_poll, U i)
             current_space_length += 1
             recording_timeout += 1
     // update input delay
-    if poll && delay_graph[NUM_DELAYS-1] == $FF
-        // reset graph
+    if poll && !lr_this_piece
+        lr_this_piece = true
+        // update graph
+        for U i = 0; i < NUM_DELAYS-1; i += 1
+            delay_graph[i] = delay_graph[i + 1]
         delay_graph[NUM_DELAYS-1] = (subframe_active_index << 3) + i
         subframe_render_flags |= SUBFRAME_RENDER_DELAY
         if input_stream_state == INPUT_STREAM_STATE_WAITING
@@ -116,12 +120,9 @@ fn update_hud_poll(Bool poll, Bool last_poll, Bool last_frame_poll, U i)
 // reset vars, prep for next thing
 fn reset_piece_aligned_hud_state()
 : +inline
+    lr_this_piece = false
     subframe_active_index = 0
     input_stream_state = INPUT_STREAM_STATE_WAITING
-    for U i = 0; i < NUM_DELAYS-1; i += 1
-        delay_graph[i] = delay_graph[i + 1]
-    // shift delay_graph
-    delay_graph[NUM_DELAYS-1] = $FF
     is_first_piece = false
     recording_state = RECORDING_OFF
 
