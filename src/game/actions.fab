@@ -42,10 +42,13 @@ fn game_action.lock_piece() U
 
 fn add_piece_to_board()
     PieceTileset tileset = get_piece_tileset(active_piece_id)
+    // TODO: pretty sure this is top-row incompliant
     for U i = 0; i < 4; i += 1
         PieceTile tile = tileset.tiles[i]
         U x = piece_x + tile.x_offset
         U y = piece_y + tile.y_offset
+        if S(y) < 0
+            continue
         board_set_cell(@board, x, y, tile.tile_type)
 
 
@@ -226,16 +229,16 @@ fn compute_active_piece_tiles()
         render_active_piece = false
         return
     PieceTileset old_tileset = get_piece_tileset(old_active_piece_id)
-    // PART 1: clear old tiles
+    // PART 1: "clear" old tiles (use board's current tiles)
     for U i = 0; i < 4; i += 1
         PieceTile tile = old_tileset.tiles[i]
         U x = old_piece_x + tile.x_offset
         U y = old_piece_y + tile.y_offset
-        if y >= $80
+        if S(y) < 0
            old_active_piece_tiles[i].addr = $2000
         else
             old_active_piece_tiles[i].addr = ppu_addr_from_coords(12+x, 6+y, 0)
-        old_active_piece_tiles[i].tile = $FF
+        old_active_piece_tiles[i].tile = board_get_cell(@board, x, y)
     // PART 2: write new tiles
     PieceTileset new_tileset = get_piece_tileset(active_piece_id)
     for U i = 0; i < 4; i += 1
