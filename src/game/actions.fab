@@ -125,11 +125,32 @@ fn game_action.check_b_type_done() U
 fn game_action.receive_garbage() U
     return PLAY_STATE_GET_NEXT_PIECE
 
-// attempts to replicate gym's drought mode
-// I'm not 100% sure it's correct, since I haven't tested it, only compared against gym`
+/* 
+attempting to replicate:
+
+    and #$F
+    adc #1 ; // Add A = A + 1 + C (1)
+    cmp droughtModifier // A - droughtModifier
+    bmi @pickRando  // breaks if A - droughtModifier < 0
+
+I couldn't get the above output exactly, in particular the carry flag 
+will be reset by nesfab, (it's 1 always, above)
+so I added 2 instead of 1, which should be equiv
+
+testing in mesen seems to indicate it works – 
+if you set A to be max (0x11), and drought to be 1 less than max (0x11),
+then the longbar is played,
+otherwise, it won't be.
+
+if drought is max (0x12), and A is max (0x11), it rerolls
+
+This was tested through setting the value directly in mesen memory viewer, 
+before the first AND #$0F instruction 
+*/
 fn drought_check(U piece_id) U
     while (piece_id == $12):
-        if ((prng_value.a & $0F)+1) <= drought
+        U val = (prng_value.a & $0F) + 2
+        if S(val - drought) < 0
             advance_prng()
             piece_id = get_next_piece_id()
         else 
