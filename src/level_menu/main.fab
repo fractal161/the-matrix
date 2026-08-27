@@ -13,6 +13,7 @@ vars
     U start_level = 29
     U start_height = 0
     U floor = 0
+    U drought = 0
     Bool goofy_flag = false
 
     // use read/write HighScore(ptr) to interface
@@ -64,13 +65,15 @@ fn render.level_menu()
     if level_menu_render_flags & LEVEL_MENU_RENDER_FLOOR > 0
         // TODO: don't hardcode lmao
         level_menu_print.floor(3)
+    if level_menu_render_flags & LEVEL_MENU_RENDER_DROUGHT > 0
+        // TODO: don't hardcode lmao
+        level_menu_print.drought(4)
     level_menu_render_flags = 0
 
 fn level_menu_change.type(U change)
     // TODO: implement
 fn level_menu_print.type(U row)
     // TODO: implement
-
 
 fn level_menu_change.level(U change)
     U cursor_x = get_level_menu_cursor_x()
@@ -140,9 +143,16 @@ fn level_menu_print.floor(U row)
     {PPUDATA}(floor)
 
 fn level_menu_change.drought(U change)
-    // TODO: implement
+    drought += change
+    if drought == $FF
+        drought = 0
+    if drought == 19
+        drought = 18
+    level_menu_render_flags |= LEVEL_MENU_RENDER_DROUGHT
 fn level_menu_print.drought(U row)
-    // TODO: implement
+    MenuSection section = ALL_MENU_SECTIONS[row]
+    ppu_set_addr(section.start_ppu_addr)
+    {PPUDATA}(drought)
 fn level_menu_change.b_type_height(U change)
     // TODO: implement
 fn level_menu_print.b_type_height(U row)
@@ -219,6 +229,8 @@ mode level_menu()
     level_menu_print.level(1)
     level_menu_print.goofy(2)
     level_menu_print.floor(3)
+    // speaking of things that shouldn't be hardcoded
+    level_menu_print.drought(4)
     fence
     safe_enable_rendering()
     while true

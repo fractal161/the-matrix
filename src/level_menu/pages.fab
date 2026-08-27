@@ -7,6 +7,7 @@ vars /level_menu
 ct U LEVEL_MENU_RENDER_LEVEL = $01
 ct U LEVEL_MENU_RENDER_FLOOR = $02
 ct U LEVEL_MENU_RENDER_GOOFY = $04
+ct U LEVEL_MENU_RENDER_DROUGHT = $08
 
 struct MenuSection
     U field_count
@@ -48,14 +49,14 @@ ct MenuSection[TOTAL_SECTION_COUNT] ALL_MENU_SECTIONS = MenuSection[](
     _menu_section_maker(2, 20, 13, 0), // level
     _menu_section_maker(1, 19, 16, 1), // goofy
     _menu_section_maker(1, 21, 19, 0), // floor
-    _menu_section_maker(1, 20, 22, 0), // drought
+    _menu_section_maker(1, 21, 22, 0), // drought
     // b-type
     _menu_section_maker(1, 21, 10, 0), // type
     _menu_section_maker(2, 20, 13, 0), // level
     _menu_section_maker(2, 19, 16, 1), // goofy
     _menu_section_maker(1, 21, 19, 0), // height
     _menu_section_maker(1, 21, 22, 0), // floor
-    _menu_section_maker(1, 20, 25, 0), // drought
+    _menu_section_maker(1, 21, 25, 0), // drought
 )
 // has to be separate from ALL_MENU_SECTIONS for compile time reasons
 ct Fn.level_menu_change[TOTAL_SECTION_COUNT] LEVEL_MENU_CHANGE_FNS = Fn.level_menu_change[](

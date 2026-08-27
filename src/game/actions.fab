@@ -125,6 +125,17 @@ fn game_action.check_b_type_done() U
 fn game_action.receive_garbage() U
     return PLAY_STATE_GET_NEXT_PIECE
 
+// attempts to replicate gym's drought mode
+// I'm not 100% sure it's correct, since I haven't tested it, only compared against gym`
+fn drought_check(U piece_id) U
+    while (piece_id == $12):
+        if ((prng_value.a & $0F)+1) <= drought
+            advance_prng()
+            piece_id = get_next_piece_id()
+        else 
+            return piece_id
+    return piece_id
+
 fn game_action.get_next_piece() U
     if S(vram_row) < $20
         return PLAY_STATE_GET_NEXT_PIECE
@@ -137,6 +148,9 @@ fn game_action.get_next_piece() U
     active_piece_id = next_piece_id
     increment_piece_count(active_piece_id)
     next_piece_id = get_next_piece_id()
+    
+    next_piece_id = drought_check(next_piece_id)
+    
     secondary_fall_timer = 0
     // queue piece for draw
     game_render_flags |= GAME_RENDER_NEXT_PIECE

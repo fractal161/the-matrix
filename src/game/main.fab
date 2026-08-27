@@ -192,10 +192,12 @@ mode game()
 
     // init active and next piece
     active_piece_id = get_next_piece_id()
+    active_piece_id = drought_check(active_piece_id)
     old_active_piece_id = PIECE_ID_NONE
     increment_piece_count(active_piece_id)
     advance_prng()
     next_piece_id = get_next_piece_id()
+    next_piece_id = drought_check(next_piece_id)
     // need to do this
     compute_active_piece_tiles()
 
